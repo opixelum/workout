@@ -1,80 +1,78 @@
-# ruff: noqa: I001
-from pathlib import Path
-import sys
+from workout import crud, schemas
 
-import pytest
 
-# Add src/workout to the path so we can import db and classes
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src" / "workout"))
+def test_user_lifecycle(db_session):
+    email = "test@example.com"
+    password = "password"
+    bodyweight = 80.0
+    new_email = "new_test@example.com"
+    new_password = "new_password"
+    new_bodyweight = 82.5
 
-from classes import DurationSet, Exercise, MacroCycle, Mesocycle, RepSet, SetType, Workout  # fmt: skip
-import db  # fmt: skip
+    # Create user
+    user_in = schemas.UserCreate(email=email, password=password, bodyweight=bodyweight)
+    crud.create_user(db_session, user_in)
 
-@pytest.fixture(scope="function")
-def test_macrocycle():
-    # Setup: Create a unique macrocycle
-    mc = MacroCycle(name="Temp Test Macrocycle", mesocycles=[])
-    mc_id = db.add_macrocycle(mc)
-    
-    yield mc_id
-    
-    # Teardown: Delete the macrocycle, which cascades to delete all sub-entities
-    db.del_macrocycle(mc_id)
+    # Get user by email
+    user = crud.get_user_by_email(db_session, email)
+    assert user is not None
+    assert user.id is not None
+    assert user.email == email
+    assert user.password == password
+    assert user.bodyweight == bodyweight
 
-def test_database_hierarchy(test_macrocycle):
-    macrocycle_id = test_macrocycle
-    assert macrocycle_id is not None
-    
-    # Verify macrocycle was created
-    mc_rows = db.list_rows("macrocycles")
-    assert any(row[0] == macrocycle_id and row[1] == "Temp Test Macrocycle" for row in mc_rows)
+    # Get user by id
+    user_id = user.id
+    user = crud.get_user(db_session, user_id)
+    assert user is not None
+    assert user.id == user_id
+    assert user.email == email
+    assert user.password == password
+    assert user.bodyweight == bodyweight
 
-    # 1. Add Mesocycle
-    mesocycle = Mesocycle(name="Test Mesocycle", workouts=[])
-    mesocycle_id = db.add_mesocycle(mesocycle, macrocycle_id)
-    assert mesocycle_id is not None
-    
-    meso_rows = db.list_rows("mesocycles")
-    assert any(row[0] == mesocycle_id and row[1] == "Test Mesocycle" and row[2] == macrocycle_id for row in meso_rows)
+    # Update email address
+    user_in = schemas.UserUpdate(email=new_email)
+    crud.update_user(db_session, user_id, user_in)
+    updated_user = crud.get_user_by_email(db_session, new_email)
+    assert updated_user is not None
+    assert updated_user.id == user_id
+    assert updated_user.email == new_email
+    assert updated_user.password == password
+    assert updated_user.bodyweight == bodyweight
 
-    # 2. Add Workout
-    workout = Workout(name="Test Workout", exercises=[])
-    workout_id = db.add_workout(workout, mesocycle_id)
-    assert workout_id is not None
+    # Update password
+    user_in = schemas.UserUpdate(password=new_password)
+    crud.update_user(db_session, user_id, user_in)
+    updated_user = crud.get_user(db_session, user_id)
+    assert updated_user is not None
+    assert updated_user.id == user_id
+    assert updated_user.email == new_email
+    assert updated_user.password == new_password
+    assert updated_user.bodyweight == bodyweight
 
-    workout_rows = db.list_rows("workouts")
-    assert any(row[0] == workout_id and row[1] == "Test Workout" and row[2] == mesocycle_id for row in workout_rows)
+    # Update bodyweight
+    user_in = schemas.UserUpdate(bodyweight=new_bodyweight)
+    crud.update_user(db_session, user_id, user_in)
+    updated_user = crud.get_user(db_session, user_id)
+    assert updated_user is not None
+    assert updated_user.id == user_id
+    assert updated_user.email == new_email
+    assert updated_user.password == new_password
+    assert updated_user.bodyweight == new_bodyweight
 
-    # 3. Add Exercise
-    exercise = Exercise(name="Test Exercise", sets=[])
-    exercise_id = db.add_exercise(exercise, workout_id)
-    assert exercise_id is not None
+    # Update everything
+    user_in = schemas.UserUpdate(email=email, password=password, bodyweight=bodyweight)
+    crud.update_user(db_session, user_id, user_in)
+    updated_user = crud.get_user_by_email(db_session, email)
+    assert updated_user is not None
+    assert updated_user.id == user_id
+    assert updated_user.email == email
+    assert updated_user.password == password
+    assert updated_user.bodyweight == bodyweight
 
-    exercise_rows = db.list_rows("exercises")
-    assert any(row[0] == exercise_id and row[1] == "Test Exercise" and row[2] == workout_id for row in exercise_rows)
+    # Delete user
+    crud.delete_user(db_session, user_id)
+    user = crud.get_user(db_session, user_id)
+    assert user is None
 
-    # 4. Add RepSet
-    rep_set = RepSet(type_=SetType.WORKSET, rpe=8.0, weight=100.0, rest=90, reps=5, tempo=(2, 1, 1))
-    rep_set_id = db.add_rep_set(rep_set, exercise_id)
-    assert rep_set_id is not None
-
-    # Check sets table
-    set_rows = db.list_rows("sets")
-    assert any(row[0] == rep_set_id and row[1] == "WORKSET" and row[2] == 8.0 and row[3] == 100.0 and row[4] == 90 and row[5] == exercise_id for row in set_rows)
-
-    # Check rep_sets table
-    rep_set_rows = db.list_rows("rep_sets")
-    assert any(row[1] == rep_set_id and row[2] == 5 and row[3] == 2 and row[4] == 1 and row[5] == 1 for row in rep_set_rows)
-
-    # 5. Add DurationSet
-    duration_set = DurationSet(type_=SetType.WARMUP, rpe=5.0, weight=10.0, rest=30, duration=45)
-    duration_set_id = db.add_duration_set(duration_set, exercise_id)
-    assert duration_set_id is not None
-
-    # Check sets table for DurationSet
-    set_rows_after = db.list_rows("sets")
-    assert any(row[0] == duration_set_id and row[1] == "WARMUP" and row[2] == 5.0 and row[3] == 10.0 and row[4] == 30 and row[5] == exercise_id for row in set_rows_after)
-
-    # Check duration_sets table
-    duration_set_rows = db.list_rows("duration_sets")
-    assert any(row[1] == duration_set_id and row[2] == 45 for row in duration_set_rows)
+    db_session.close()
