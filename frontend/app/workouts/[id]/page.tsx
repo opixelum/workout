@@ -1,6 +1,7 @@
 import { api, Workout, Exercise, RepSet, DurationSet } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -46,7 +47,12 @@ export default async function WorkoutDetailPage({ params }: { params: Promise<{ 
       
       <Card className="mt-4">
         <CardHeader>
-          <CardTitle>{workout.name}</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle>{workout.name}</CardTitle>
+            <Link href={`/workouts/${id}/active`}>
+              <Button>Start Workout</Button>
+            </Link>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm text-muted-foreground mb-4">
