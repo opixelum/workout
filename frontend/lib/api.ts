@@ -1,0 +1,140 @@
+const API_BASE_URL = 'http://127.0.0.1:8000';
+
+const DEFAULT_USER_ID = 1;
+
+export interface User {
+  id: number;
+  email: string;
+  bodyweight: number | null;
+}
+
+export interface Workout {
+  id: number;
+  user_id: number;
+  name: string;
+  planned: boolean;
+  description: string | null;
+  creation_date: string;
+  mesocycle_id: number | null;
+}
+
+export interface Exercise {
+  id: number;
+  user_id: number;
+  name: string;
+  description: string | null;
+  type: 'REPS' | 'DURATION';
+}
+
+export interface Set {
+  id: number;
+  workout_id: number;
+  exercise_id: number;
+  type_: string;
+  note: string | null;
+  weight: number | null;
+  rpe: number | null;
+  rest: number;
+}
+
+export interface RepSet extends Set {
+  reps: number | null;
+  tempo_excentric: number;
+  tempo_isometric: number;
+  tempo_concentric: number;
+}
+
+export interface DurationSet extends Set {
+  duration: number;
+}
+
+async function fetchAPI(endpoint: string, options?: RequestInit) {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const response = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
+    ...options,
+  });
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export const api = {
+  // User
+  getUser: (userId: number = DEFAULT_USER_ID) => 
+    fetchAPI(`/users/${userId}`),
+  
+  updateUser: (userId: number = DEFAULT_USER_ID, data: Partial<User>) =>
+    fetchAPI(`/users/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  deleteUser: (userId: number = DEFAULT_USER_ID) =>
+    fetchAPI(`/users/${userId}`, {
+      method: 'DELETE',
+    }),
+
+  // Workouts
+  getWorkouts: (userId: number = DEFAULT_USER_ID) =>
+    fetchAPI(`/workouts?user_id=${userId}`),
+
+  getWorkout: (workoutId: number) =>
+    fetchAPI(`/workouts/${workoutId}`),
+
+  createWorkout: (data: Omit<Workout, 'id' | 'creation_date'>) =>
+    fetchAPI('/workouts', {
+      method: 'POST',
+      body: JSON.stringify({ ...data, user_id: DEFAULT_USER_ID }),
+    }),
+
+  updateWorkout: (workoutId: number, data: Partial<Workout>) =>
+    fetchAPI(`/workouts/${workoutId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  deleteWorkout: (workoutId: number) =>
+    fetchAPI(`/workouts/${workoutId}`, {
+      method: 'DELETE',
+    }),
+
+  // Exercises
+  getExercises: (userId: number = DEFAULT_USER_ID) =>
+    fetchAPI(`/exercises?user_id=${userId}`),
+
+  getExercise: (exerciseId: number) =>
+    fetchAPI(`/exercises/${exerciseId}`),
+
+  createExercise: (data: Omit<Exercise, 'id'>) =>
+    fetchAPI('/exercises', {
+      method: 'POST',
+      body: JSON.stringify({ ...data, user_id: DEFAULT_USER_ID }),
+    }),
+
+  // Sets
+  getSets: (workoutId?: number, exerciseId?: number) => {
+    const params = new URLSearchParams();
+    if (workoutId) params.append('workout_id', workoutId.toString());
+    if (exerciseId) params.append('exercise_id', exerciseId.toString());
+    return fetchAPI(`/sets?${params.toString()}`);
+  },
+
+  getRepSets: () =>
+    fetchAPI('/rep_sets'),
+
+  getDurationSets: () =>
+    fetchAPI('/duration_sets'),
+};
+
+export const DEFAULT_USER: User = {
+  id: DEFAULT_USER_ID,
+  email: 'john.doe@example.com',
+  bodyweight: 75.0,
+};
