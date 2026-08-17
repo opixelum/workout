@@ -52,7 +52,7 @@ export default function ActiveWorkoutPage({ params }: { params: Promise<{ id: st
   const [loading, setLoading] = useState(true);
   const [workoutId, setWorkoutId] = useState<number | null>(null);
   const [selectedSetTypes, setSelectedSetTypes] = useState<Map<number, string>>(new Map());
-  const inputValues = useRef<Map<string, string>>(new Map());
+  const [inputs, setInputs] = useState<Record<string, string>>({});
   const router = useRouter();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -140,7 +140,7 @@ export default function ActiveWorkoutPage({ params }: { params: Promise<{ id: st
       
       // Helper function to get input value or use placeholder
       const getValueOrPlaceholder = (key: string, placeholder: string) => {
-        const value = inputValues.current.get(`${setId}-${key}`) || '';
+        const value = inputs[`${setId}-${key}`] || '';
         return value.trim() || placeholder;
       };
       
@@ -180,6 +180,15 @@ export default function ActiveWorkoutPage({ params }: { params: Promise<{ id: st
           actualValues: actualValues as Record<string, string>,
         });
         return newMap;
+      });
+
+      // Persist actual values into controlled inputs so they don't switch from uncontrolled -> controlled
+      setInputs(prev => {
+        const next = { ...prev };
+        Object.entries(actualValues).forEach(([k, v]) => {
+          next[`${setId}-${k === 'tempoEccentric' ? 'tempo-eccentric' : k === 'tempoIsometric' ? 'tempo-isometric' : k === 'tempoConcentric' ? 'tempo-concentric' : k}`] = String(v);
+        });
+        return next;
       });
 
       if (restTime > 0) {
@@ -306,9 +315,9 @@ export default function ActiveWorkoutPage({ params }: { params: Promise<{ id: st
                             <Input
                               type="number"
                               placeholder={actualValues.weight || (set.weight?.toString() || '0')}
-                              defaultValue={isCompleted && actualValues.weight ? String(actualValues.weight) : ''}
+                              value={inputs[`${set.id}-weight`] ?? (isCompleted && actualValues.weight ? String(actualValues.weight) : '')}
                               className="w-20"
-                              onChange={(e) => inputValues.current.set(`${set.id}-weight`, e.target.value)}
+                              onChange={(e) => setInputs(prev => ({ ...prev, [`${set.id}-weight`]: e.target.value }))}
                             />
                             
                             {isRepExercise && (
@@ -316,36 +325,36 @@ export default function ActiveWorkoutPage({ params }: { params: Promise<{ id: st
                                 <Input
                                   type="number"
                                   placeholder={actualValues.reps || ('reps' in set ? (set.reps?.toString() || '0') : '0')}
-                                  defaultValue={isCompleted && actualValues.reps ? String(actualValues.reps) : ''}
+                                  value={inputs[`${set.id}-reps`] ?? (isCompleted && actualValues.reps ? String(actualValues.reps) : '')}
                                   min="0"
                                   className="w-16"
-                                  onChange={(e) => inputValues.current.set(`${set.id}-reps`, e.target.value)}
+                                  onChange={(e) => setInputs(prev => ({ ...prev, [`${set.id}-reps`]: e.target.value }))}
                                 />
                                 
                                 <div className="flex gap-1">
                                   <Input
                                     type="number"
                                     placeholder={actualValues.tempoEccentric || ('tempo_excentric' in set ? set.tempo_excentric.toString() : '0')}
-                                    defaultValue={isCompleted && actualValues.tempoEccentric ? String(actualValues.tempoEccentric) : ''}
+                                    value={inputs[`${set.id}-tempo-eccentric`] ?? (isCompleted && actualValues.tempoEccentric ? String(actualValues.tempoEccentric) : '')}
                                     min="0"
                                     className="w-14 text-center"
-                                    onChange={(e) => inputValues.current.set(`${set.id}-tempo-eccentric`, e.target.value)}
+                                    onChange={(e) => setInputs(prev => ({ ...prev, [`${set.id}-tempo-eccentric`]: e.target.value }))}
                                   />
                                   <Input
                                     type="number"
                                     placeholder={actualValues.tempoIsometric || ('tempo_isometric' in set ? set.tempo_isometric.toString() : '0')}
-                                    defaultValue={isCompleted && actualValues.tempoIsometric ? String(actualValues.tempoIsometric) : ''}
+                                    value={inputs[`${set.id}-tempo-isometric`] ?? (isCompleted && actualValues.tempoIsometric ? String(actualValues.tempoIsometric) : '')}
                                     min="0"
                                     className="w-14 text-center"
-                                    onChange={(e) => inputValues.current.set(`${set.id}-tempo-isometric`, e.target.value)}
+                                    onChange={(e) => setInputs(prev => ({ ...prev, [`${set.id}-tempo-isometric`]: e.target.value }))}
                                   />
                                   <Input
                                     type="number"
                                     placeholder={actualValues.tempoConcentric || ('tempo_concentric' in set ? set.tempo_concentric.toString() : '0')}
-                                    defaultValue={isCompleted && actualValues.tempoConcentric ? String(actualValues.tempoConcentric) : ''}
+                                    value={inputs[`${set.id}-tempo-concentric`] ?? (isCompleted && actualValues.tempoConcentric ? String(actualValues.tempoConcentric) : '')}
                                     min="0"
                                     className="w-14 text-center"
-                                    onChange={(e) => inputValues.current.set(`${set.id}-tempo-concentric`, e.target.value)}
+                                    onChange={(e) => setInputs(prev => ({ ...prev, [`${set.id}-tempo-concentric`]: e.target.value }))}
                                   />
                                 </div>
                               </>
@@ -355,22 +364,22 @@ export default function ActiveWorkoutPage({ params }: { params: Promise<{ id: st
                               <Input
                                 type="number"
                                 placeholder={actualValues.duration || ('duration' in set ? set.duration.toString() : '0')}
-                                defaultValue={isCompleted && actualValues.duration ? String(actualValues.duration) : ''}
+                                value={inputs[`${set.id}-duration`] ?? (isCompleted && actualValues.duration ? String(actualValues.duration) : '')}
                                 min="0"
                                 className="w-16"
-                                onChange={(e) => inputValues.current.set(`${set.id}-duration`, e.target.value)}
+                                onChange={(e) => setInputs(prev => ({ ...prev, [`${set.id}-duration`]: e.target.value }))}
                               />
                             )}
                             
                             <Input
                               type="number"
                               placeholder={actualValues.rpe || (set.rpe?.toString() || '0')}
-                              defaultValue={isCompleted && actualValues.rpe ? String(actualValues.rpe) : ''}
+                              value={inputs[`${set.id}-rpe`] ?? (isCompleted && actualValues.rpe ? String(actualValues.rpe) : '')}
                               className="w-16"
                               min="1"
                               max="10"
                               step="0.5"
-                              onChange={(e) => inputValues.current.set(`${set.id}-rpe`, e.target.value)}
+                              onChange={(e) => setInputs(prev => ({ ...prev, [`${set.id}-rpe`]: e.target.value }))}
                             />
                             
                             <Button
