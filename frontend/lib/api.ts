@@ -131,6 +131,19 @@ export const api = {
 
   getDurationSets: () =>
     fetchAPI('/duration_sets'),
+  
+  // Create rep/duration sets
+  createRepSet: (data: Omit<RepSet, 'id'>) =>
+    fetchAPI('/rep_sets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  createDurationSet: (data: Omit<DurationSet, 'id'>) =>
+    fetchAPI('/duration_sets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
 
 export const DEFAULT_USER: User = {

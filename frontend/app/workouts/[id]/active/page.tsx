@@ -5,8 +5,18 @@ import { api, Workout, Exercise, RepSet, DurationSet } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogClose,
+} from '@/components/ui/dialog';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 interface SetCompletion {
   completed: boolean;
@@ -43,6 +53,10 @@ export default function ActiveWorkoutPage({ params }: { params: Promise<{ id: st
   const [workoutId, setWorkoutId] = useState<number | null>(null);
   const [selectedSetTypes, setSelectedSetTypes] = useState<Map<number, string>>(new Map());
   const inputValues = useRef<Map<string, string>>(new Map());
+  const router = useRouter();
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'cancel' | 'finish' | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -382,8 +396,8 @@ export default function ActiveWorkoutPage({ params }: { params: Promise<{ id: st
               variant="outline" 
               className="flex-1"
               onClick={() => {
-                // TODO: Implement cancel workout logic
-                console.log('Cancel workout clicked');
+                setDialogMode('cancel');
+                setDialogOpen(true);
               }}
             >
               Cancel Workout
@@ -392,13 +406,93 @@ export default function ActiveWorkoutPage({ params }: { params: Promise<{ id: st
               variant="default" 
               className="flex-1"
               onClick={() => {
-                // TODO: Implement finish workout logic
-                console.log('Finish workout clicked');
+                setDialogMode('finish');
+                setDialogOpen(true);
               }}
             >
               Finish Workout
             </Button>
           </div>
+          
+          <Dialog open={dialogOpen} onOpenChange={(open) => setDialogOpen(open)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{dialogMode === 'cancel' ? 'Cancel workout' : 'Finish workout'}</DialogTitle>
+              </DialogHeader>
+              <DialogDescription>
+                {dialogMode === 'cancel'
+                  ? 'Are you sure to cancel your workout?'
+                  : 'Are you sure to finish your workout?'}
+              </DialogDescription>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setDialogOpen(false)}
+                >
+                  No
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={async () => {
+                    if (dialogMode === 'cancel') {
+                      setDialogOpen(false);
+                      router.push('/workouts');
+                      return;
+                    }
+
+                    // Finish workout: create workout (planned=false) and save completed sets
+                    try {
+                      const newWorkout = await api.createWorkout({
+                        name: workout?.name || 'Finished workout',
+                        planned: false,
+                        description: workout?.description || null,
+                        mesocycle_id: (workout as any)?.mesocycle_id || null,
+                      } as any);
+
+                      for (const [setId, completion] of Array.from(setCompletions.entries())) {
+                        if (!completion.completed) continue;
+                        const setObj = repSets.find(s => s.id === setId) || durationSets.find(s => s.id === setId);
+                        if (!setObj) continue;
+
+                        const typeSelected = selectedSetTypes.get(setId) || (setObj as any).type_;
+                        const base: any = {
+                          workout_id: newWorkout.id,
+                          exercise_id: (setObj as any).exercise_id,
+                          type_: typeSelected,
+                          note: null,
+                          weight: completion.actualValues.weight ? parseFloat(completion.actualValues.weight) : null,
+                          rpe: completion.actualValues.rpe ? parseFloat(completion.actualValues.rpe) : null,
+                          rest: (setObj as any).rest || 0,
+                        };
+
+                        if ('reps' in (setObj as any)) {
+                          await api.createRepSet({
+                            ...base,
+                            reps: completion.actualValues.reps ? parseInt(completion.actualValues.reps) : ((setObj as any).reps ?? null),
+                            tempo_excentric: completion.actualValues.tempoEccentric ? parseInt(completion.actualValues.tempoEccentric) : ((setObj as any).tempo_excentric ?? 0),
+                            tempo_isometric: completion.actualValues.tempoIsometric ? parseInt(completion.actualValues.tempoIsometric) : ((setObj as any).tempo_isometric ?? 0),
+                            tempo_concentric: completion.actualValues.tempoConcentric ? parseInt(completion.actualValues.tempoConcentric) : ((setObj as any).tempo_concentric ?? 0),
+                          } as any);
+                        } else {
+                          await api.createDurationSet({
+                            ...base,
+                            duration: completion.actualValues.duration ? parseInt(completion.actualValues.duration) : ((setObj as any).duration ?? 0),
+                          } as any);
+                        }
+                      }
+                    } catch (err) {
+                      console.error('Error saving finished workout', err);
+                    } finally {
+                      setDialogOpen(false);
+                      router.push('/workouts');
+                    }
+                  }}
+                >
+                  Yes
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
     </div>

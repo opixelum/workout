@@ -106,7 +106,7 @@ export default async function WorkoutsPage() {
 
               return (
                 <Link key={workout.id} href={`/workouts/${workout.id}`}>
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer mb-4">
                     <CardContent>
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
