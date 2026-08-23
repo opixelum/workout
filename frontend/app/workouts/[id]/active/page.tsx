@@ -1,5 +1,25 @@
 "use client";
+import { GripHorizontal } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import {
 	api,
 	type DurationSet,
@@ -842,7 +862,7 @@ export default function ActiveWorkoutPage({
 													return (
 														<div
 															key={set.id}
-															className={`flex flex-wrap justify-between items-center gap-2 p-3 rounded border ${
+															className={`flex flex-wrap justify-between items-center gap-2 p-3 rounded-lg border ${
 																isCompleted
 																	? "bg-green-50 border-green-300"
 																	: "bg-background"
@@ -852,17 +872,11 @@ export default function ActiveWorkoutPage({
 																{index + 1}
 															</span>
 
-															<select
-																className={`w-24 rounded border px-2 py-1 text-sm ${
-																	isCompleted &&
-																	(selectedSetTypes.get(set.id) ||
-																		set.type_) === "WORKSET"
-																		? "bg-green-50"
-																		: selectColor
-																}`}
-																defaultValue={set.type_}
-																onChange={(e) => {
-																	const selectedType = e.target.value;
+															<Select
+																value={
+																	selectedSetTypes.get(set.id) || set.type_
+																}
+																onValueChange={(selectedType) => {
 																	setSelectedSetTypes((prev) => {
 																		const next = new Map(prev);
 																		next.set(set.id, selectedType);
@@ -876,12 +890,25 @@ export default function ActiveWorkoutPage({
 																	}
 																}}
 															>
-																{SET_TYPES.map((type) => (
-																	<option key={type} value={type}>
-																		{SET_TYPE_LABELS[type] || type}
-																	</option>
-																))}
-															</select>
+																<SelectTrigger
+																	className={`w-28 border px-2 py-1 text-sm ${
+																		isCompleted &&
+																		(selectedSetTypes.get(set.id) ||
+																			set.type_) === "WORKSET"
+																			? "bg-green-50"
+																			: selectColor
+																	}`}
+																>
+																	<SelectValue />
+																</SelectTrigger>
+																<SelectContent>
+																	{SET_TYPES.map((type) => (
+																		<SelectItem key={type} value={type}>
+																			{SET_TYPE_LABELS[type] || type}
+																		</SelectItem>
+																	))}
+																</SelectContent>
+															</Select>
 
 															<Input
 																type="number"
@@ -1182,20 +1209,26 @@ export default function ActiveWorkoutPage({
 								<DialogTitle>Add exercise</DialogTitle>
 							</DialogHeader>
 							<div className="space-y-4 py-2">
-								<select
-									className="w-full rounded border px-3 py-2"
-									value={selectedExerciseId ?? ""}
-									onChange={(e) =>
-										setSelectedExerciseId(Number(e.target.value))
+								<Select
+									value={selectedExerciseId?.toString() ?? null}
+									onValueChange={(value) =>
+										setSelectedExerciseId(value ? Number(value) : null)
 									}
 								>
-									<option value="">Select an exercise</option>
-									{availableExercises.map((exercise) => (
-										<option key={exercise.id} value={exercise.id}>
-											{exercise.name}
-										</option>
-									))}
-								</select>
+									<SelectTrigger className="w-full rounded border px-3 py-2">
+										<SelectValue placeholder="Select an exercise" />
+									</SelectTrigger>
+									<SelectContent>
+										{availableExercises.map((exercise) => (
+											<SelectItem
+												key={exercise.id}
+												value={exercise.id.toString()}
+											>
+												{exercise.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</div>
 							<DialogFooter>
 								<Button
