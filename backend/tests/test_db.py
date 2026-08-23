@@ -83,7 +83,9 @@ def test_user_lifecycle(db_session):
     assert user.bodyweight == bodyweight
 
     # Update user
-    user_in = schemas.UserUpdate(email=new_email, password=new_password, bodyweight=new_bodyweight)
+    user_in = schemas.UserUpdate(
+        email=new_email, password=new_password, bodyweight=new_bodyweight
+    )
     crud.update_user(db_session, user_id, user_in)
     updated_user = crud.get_user_by_email(db_session, new_email)
     assert updated_user is not None

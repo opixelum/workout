@@ -5,7 +5,7 @@ os.environ["DATABASE_URL"] = os.getenv(
     "postgresql://user:password@localhost:5432/workout_test",
 )
 
-import pytest  # noqa: I001
+import pytest
 from sqlalchemy import text
 
 from workout.database import Base, SessionLocal, engine
@@ -23,9 +23,7 @@ def clean_tables():
     table_names = ", ".join(f'"{table.name}"' for table in Base.metadata.sorted_tables)
     if table_names:
         with engine.begin() as conn:
-            conn.execute(
-                text(f"TRUNCATE {table_names} RESTART IDENTITY CASCADE")
-            )
+            conn.execute(text(f"TRUNCATE {table_names} RESTART IDENTITY CASCADE"))
     yield
 
 
