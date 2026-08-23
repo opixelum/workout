@@ -1,0 +1,10 @@
+{
+	"files": {
+		"includes": [
+			"app/**/*.tsx",
+			"components/**/*.tsx",
+			"lib/**/*.ts",
+			"test/**/*.ts"
+		]
+	}
+}

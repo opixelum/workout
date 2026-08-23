@@ -4,6 +4,21 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@keyframes account-success {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  12%,
+  88% {
+    opacity: 1;
+  }
+}
+
+.account-success {
+  animation: account-success 1.5s ease-in-out forwards;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
