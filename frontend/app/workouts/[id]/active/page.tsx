@@ -846,7 +846,7 @@ export default function ActiveWorkoutPage({
 													<span className="w-16">duration</span>
 												)}
 												<span className="w-16">RPE</span>
-												<span className="w-8" />
+												{!isFormMode && <span className="w-8" />}
 											</div>
 
 											<div className="space-y-3">
@@ -877,6 +877,7 @@ export default function ActiveWorkoutPage({
 																	selectedSetTypes.get(set.id) || set.type_
 																}
 																onValueChange={(selectedType) => {
+																	if (!selectedType) return;
 																	setSelectedSetTypes((prev) => {
 																		const next = new Map(prev);
 																		next.set(set.id, selectedType);
@@ -1215,8 +1216,14 @@ export default function ActiveWorkoutPage({
 										setSelectedExerciseId(value ? Number(value) : null)
 									}
 								>
-									<SelectTrigger className="w-full rounded border px-3 py-2">
-										<SelectValue placeholder="Select an exercise" />
+									<SelectTrigger className="w-full border px-3 py-2">
+										<SelectValue>
+											{selectedExerciseId === null
+												? "Select an exercise"
+												: availableExercises.find(
+														(exercise) => exercise.id === selectedExerciseId,
+													)?.name}
+										</SelectValue>
 									</SelectTrigger>
 									<SelectContent>
 										{availableExercises.map((exercise) => (
