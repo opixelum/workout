@@ -126,6 +126,17 @@ export const api = {
 			body: JSON.stringify({ ...data, user_id: DEFAULT_USER_ID }),
 		}),
 
+	updateExercise: (exerciseId: number, data: Partial<Exercise>) =>
+		fetchAPI(`/exercises/${exerciseId}`, {
+			method: "PATCH",
+			body: JSON.stringify(data),
+		}),
+
+	deleteExercise: (exerciseId: number) =>
+		fetchAPI(`/exercises/${exerciseId}`, {
+			method: "DELETE",
+		}),
+
 	// Sets
 	getSets: (workoutId?: number, exerciseId?: number) => {
 		const params = new URLSearchParams();
