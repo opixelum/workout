@@ -97,6 +97,12 @@ export default async function WorkoutDetailPage({
                 if (!exercise) return null;
 
                 const isRepExercise = exercise.type === "REPS";
+                const weightLabel =
+                  exercise.equipment === "ASSISTED_BODYWEIGHT"
+                    ? "-kg"
+                    : exercise.equipment === "BODYWEIGHT"
+                      ? "+kg"
+                      : "kg";
 
                 return (
                   <div key={exerciseId}>
@@ -114,7 +120,7 @@ export default async function WorkoutDetailPage({
                         <TableRow>
                           <TableHead>Set</TableHead>
                           <TableHead>Type</TableHead>
-                          <TableHead>Weight (kg)</TableHead>
+                          <TableHead>Weight ({weightLabel})</TableHead>
                           {isRepExercise && <TableHead>Reps</TableHead>}
                           {!isRepExercise && (
                             <TableHead>Duration (s)</TableHead>

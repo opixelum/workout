@@ -807,7 +807,14 @@ export default function ActiveWorkoutPage({
                 />
               </div>
             ) : (
-              <CardTitle className="w-full">{workout.name}</CardTitle>
+              <div className="w-full">
+                <CardTitle>{workout.name}</CardTitle>
+                {workout.description && (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {workout.description}
+                  </p>
+                )}
+              </div>
             )}
             {!isFormMode && (
               <div className="text-2xl font-mono">
@@ -876,6 +883,12 @@ export default function ActiveWorkoutPage({
                 if (!exercise) return null;
 
                 const isRepExercise = exercise.type === "REPS";
+                const weightLabel =
+                  exercise.equipment === "ASSISTED_BODYWEIGHT"
+                    ? "-kg"
+                    : exercise.equipment === "BODYWEIGHT"
+                      ? "+kg"
+                      : "kg";
 
                 const showBefore =
                   dropIndicator?.groupId === groupId &&
@@ -957,7 +970,7 @@ export default function ActiveWorkoutPage({
                       <div className="flex flex-wrap justify-between items-center gap-2 mb-2 text-sm font-medium text-muted-foreground border-b pb-2">
                         <span className="w-8">#</span>
                         <span className="w-24">Type</span>
-                        <span className="w-20">kg</span>
+                        <span className="w-20">{weightLabel}</span>
                         {isRepExercise ? (
                           <>
                             <span className="w-16">reps</span>
@@ -1232,7 +1245,19 @@ export default function ActiveWorkoutPage({
                                 }
                               />
 							  
-							  <div className="flex gap-2 items-center">
+                              <div className="flex gap-2 items-center">
+                              {!visibleNoteFields.has(set.id) &&
+                                !set.note?.trim() &&
+                                !actualValues.note?.trim() && (
+                                <Button
+                                  size="icon-sm"
+                                  variant="outline"
+                                  onClick={() => toggleNoteField(set.id)}
+                                  title="Add note"
+                                >
+                                  <FileEdit className="size-4" />
+                                </Button>
+                              )}
                               {!isEditMode && !isNewMode && (
                                 <Button
                                   size="sm"
@@ -1261,7 +1286,7 @@ export default function ActiveWorkoutPage({
                               >
                                 <Trash2 className="size-4" />
                               </Button>
-							</div>
+                              </div>
                               {visibleNoteFields.has(set.id) ||
                               set.note?.trim() ||
                               actualValues.note?.trim() ? (
@@ -1287,21 +1312,12 @@ export default function ActiveWorkoutPage({
                                     size="icon-sm"
                                     variant="outline"
                                     onClick={() => toggleNoteField(set.id)}
+                                    title="Delete note"
                                   >
                                     <X className="size-4" />
                                   </Button>
                                 </div>
-                              ) : (
-                                <Button
-                                  size="icon-sm"
-                                  variant="outline"
-                                  className="mt-2"
-                                  onClick={() => toggleNoteField(set.id)}
-                                  title="Add note"
-                                >
-                                  <FileEdit className="size-4" />
-                                </Button>
-                              )}
+                              ) : null}
                             </div>
                           );
                         })}
