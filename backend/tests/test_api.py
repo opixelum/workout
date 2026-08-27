@@ -60,11 +60,25 @@ def test_api_full_flow(client):
     # 4. Create Exercise
     resp = client.post(
         "/exercises",
-        json={"name": "API Test Bench Press", "user_id": user_id, "type": "REPS"},
+        json={
+            "name": "API Test Bench Press",
+            "user_id": user_id,
+            "type": "REPS",
+            "equipment": "BARBELL",
+        },
     )
     assert resp.status_code == 201
     exercise_data = resp.json()
     exercise_id = exercise_data["id"]
+    assert exercise_data["equipment"] == "BARBELL"
+
+    # Update Exercise equipment
+    resp = client.put(
+        f"/exercises/{exercise_id}",
+        json={"equipment": "DUMBBELL"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["equipment"] == "DUMBBELL"
 
     # 5. Create RepSet
     resp = client.post(

@@ -264,6 +264,9 @@ def create_exercise(
         type=exercise.type.value
         if isinstance(exercise.type, schemas.ExerciseType)
         else str(exercise.type),
+        equipment=exercise.equipment.value
+        if isinstance(exercise.equipment, schemas.Equipment)
+        else str(exercise.equipment),
     )
     db.add(db_exercise)
     db.commit()
@@ -284,6 +287,13 @@ def update_exercise(
             type_val.value
             if isinstance(type_val, schemas.ExerciseType)
             else str(type_val)
+        )
+    if "equipment" in update_data and update_data["equipment"] is not None:
+        equipment_val = update_data["equipment"]
+        update_data["equipment"] = (
+            equipment_val.value
+            if isinstance(equipment_val, schemas.Equipment)
+            else str(equipment_val)
         )
     for field, value in update_data.items():
         setattr(db_exercise, field, value)
@@ -320,7 +330,7 @@ def get_sets(
         query = query.filter(models.Set.workout_id == workout_id)
     if exercise_id is not None:
         query = query.filter(models.Set.exercise_id == exercise_id)
-    return query.offset(skip).limit(limit).all()
+    return query.order_by(models.Set.position, models.Set.id).offset(skip).limit(limit).all()
 
 
 def create_set(db: Session, set_in: schemas.SetCreate) -> models.Set:
@@ -335,6 +345,7 @@ def create_set(db: Session, set_in: schemas.SetCreate) -> models.Set:
         weight=set_in.weight,
         rpe=set_in.rpe,
         rest=set_in.rest,
+        position=set_in.position,
         workout_id=set_in.workout_id,
         exercise_id=set_in.exercise_id,
     )
@@ -385,7 +396,14 @@ def get_rep_set(db: Session, rep_set_id: int) -> models.RepSet | None:
 
 
 def get_rep_sets(db: Session, skip: int = 0, limit: int = 100) -> list[models.RepSet]:
-    return db.query(models.RepSet).offset(skip).limit(limit).all()
+    return (
+        db.query(models.RepSet)
+        .join(models.RepSet.set_)
+        .order_by(models.Set.position, models.Set.id)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 
 def create_rep_set(
@@ -403,6 +421,7 @@ def create_rep_set(
         weight=rep_set.weight,
         rpe=rep_set.rpe,
         rest=rep_set.rest,
+        position=rep_set.position,
         workout_id=rep_set.workout_id,
         exercise_id=rep_set.exercise_id,
     )
@@ -432,7 +451,16 @@ def update_rep_set(
     update_data = rep_set_in.model_dump(exclude_unset=True)
 
     # Set table fields
-    set_fields = {"type_", "note", "weight", "rpe", "rest", "workout_id", "exercise_id"}
+    set_fields = {
+        "position",
+        "type_",
+        "note",
+        "weight",
+        "rpe",
+        "rest",
+        "workout_id",
+        "exercise_id",
+    }
     if db_rep_set.set_:
         for field in set_fields:
             if field in update_data:
@@ -486,7 +514,14 @@ def get_duration_set(db: Session, duration_set_id: int) -> models.DurationSet | 
 def get_duration_sets(
     db: Session, skip: int = 0, limit: int = 100
 ) -> list[models.DurationSet]:
-    return db.query(models.DurationSet).offset(skip).limit(limit).all()
+    return (
+        db.query(models.DurationSet)
+        .join(models.DurationSet.set_)
+        .order_by(models.Set.position, models.Set.id)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 
 def create_duration_set(
@@ -504,6 +539,7 @@ def create_duration_set(
         weight=duration_set.weight,
         rpe=duration_set.rpe,
         rest=duration_set.rest,
+        position=duration_set.position,
         workout_id=duration_set.workout_id,
         exercise_id=duration_set.exercise_id,
     )
@@ -532,7 +568,16 @@ def update_duration_set(
     update_data = duration_set_in.model_dump(exclude_unset=True)
 
     # Set table fields
-    set_fields = {"type_", "note", "weight", "rpe", "rest", "workout_id", "exercise_id"}
+    set_fields = {
+        "position",
+        "type_",
+        "note",
+        "weight",
+        "rpe",
+        "rest",
+        "workout_id",
+        "exercise_id",
+    }
     if db_duration_set.set_:
         for field in set_fields:
             if field in update_data:

@@ -1,12 +1,13 @@
+from datetime import timedelta
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from . import crud, schemas
+from . import auth, crud, schemas
 from .database import engine, get_db
-from .models import Base
+from .models import Base, User
 
 Base.metadata.create_all(bind=engine)
 
@@ -38,7 +39,11 @@ def create_user(user: schemas.UserCreate, db: DbSession):
             status_code=status.HTTP_409_CONFLICT,
             detail="Email already registered",
         )
-    return crud.create_user(db, user)
+    # Hash password before creating user
+    hashed_password = auth.get_password_hash(user.password)
+    user_dict = user.model_dump()
+    user_dict["password"] = hashed_password
+    return crud.create_user(db, schemas.UserCreate(**user_dict))
 
 
 @app.get("/users", response_model=list[schemas.UserRead])
@@ -82,6 +87,52 @@ def delete_user(user_id: int, db: DbSession):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
+
+
+# --- Authentication ---
+
+
+@app.post("/auth/signup", response_model=schemas.Token, status_code=status.HTTP_201_CREATED)
+def signup(user: schemas.UserCreate, db: DbSession):
+    existing = crud.get_user_by_email(db, user.email)
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already registered",
+        )
+    # Hash password before creating user
+    hashed_password = auth.get_password_hash(user.password)
+    user_dict = user.model_dump()
+    user_dict["password"] = hashed_password
+    created_user = crud.create_user(db, schemas.UserCreate(**user_dict))
+    
+    # Generate token for the new user
+    access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = auth.create_access_token(
+        data={"sub": str(created_user.id)}, expires_delta=access_token_expires
+    )
+    return schemas.Token(access_token=access_token, token_type="bearer")
+
+
+@app.post("/auth/login", response_model=schemas.Token)
+def login(login_data: schemas.LoginRequest, db: DbSession):
+    user = auth.authenticate_user(db, login_data.email, login_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = auth.create_access_token(
+        data={"sub": str(user.id)}, expires_delta=access_token_expires
+    )
+    return schemas.Token(access_token=access_token, token_type="bearer")
+
+
+@app.get("/auth/me", response_model=schemas.UserRead)
+def read_users_me(current_user: Annotated[User, Depends(auth.get_current_user)]):
+    return current_user
 
 
 # --- Macrocycles ---

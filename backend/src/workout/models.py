@@ -102,6 +102,7 @@ class Exercise(Base):
     name = Column(String(255), nullable=False)
     description = Column(String(1024), nullable=True)
     type = Column(String(20), nullable=False, default="REPS")
+    equipment = Column(String(50), nullable=False)
 
     user = relationship("User", back_populates="exercises")
     sets = relationship("Set", back_populates="exercise", cascade="all, delete-orphan")
@@ -117,6 +118,7 @@ class Set(Base):
     exercise_id = Column(
         Integer, ForeignKey("exercises.id", ondelete="CASCADE"), nullable=False
     )
+    position = Column(Integer, nullable=False, default=0)
     type_ = Column(String(20), nullable=False, default="WORKSET")
     note = Column(String(1024), nullable=True)
     weight = Column(Float, nullable=True)
@@ -170,6 +172,10 @@ class RepSet(Base):
         return self.set_.rest if self.set_ else None
 
     @property
+    def position(self) -> int | None:
+        return self.set_.position if self.set_ else None
+
+    @property
     def exercise_id(self) -> int | None:
         return self.set_.exercise_id if self.set_ else None
 
@@ -215,6 +221,10 @@ class DurationSet(Base):
     @property
     def rest(self) -> int | None:
         return self.set_.rest if self.set_ else None
+
+    @property
+    def position(self) -> int | None:
+        return self.set_.position if self.set_ else None
 
     @property
     def exercise_id(self) -> int | None:

@@ -48,7 +48,12 @@ def _create_exercise(
 ) -> int:
     exercise = crud.create_exercise(
         db_session,
-        schemas.ExerciseCreate(name=name, user_id=user_id, type=type_),
+        schemas.ExerciseCreate(
+            name=name,
+            user_id=user_id,
+            type=type_,
+            equipment=schemas.Equipment.BODYWEIGHT,
+        ),
     )
     return exercise.id
 
@@ -313,6 +318,7 @@ def test_exercise_lifecycle(db_session):
         user_id=user_id,
         description=description,
         type=type_,
+        equipment=schemas.Equipment.BODYWEIGHT,
     )
     crud.create_exercise(db_session, exercise_in)
 

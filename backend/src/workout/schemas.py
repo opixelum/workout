@@ -18,6 +18,14 @@ class ExerciseType(str, Enum):
     DURATION = "DURATION"
 
 
+class Equipment(str, Enum):
+    BARBELL = "BARBELL"
+    DUMBBELL = "DUMBBELL"
+    MACHINE = "MACHINE"
+    BODYWEIGHT = "BODYWEIGHT"
+    ASSISTED_BODYWEIGHT = "ASSISTED_BODYWEIGHT"
+
+
 # --- User Schemas ---
 
 
@@ -40,6 +48,20 @@ class UserRead(UserBase):
     id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    user_id: int | None = None
+
+
+class LoginRequest(BaseModel):
+    email: str = Field(..., max_length=255)
+    password: str = Field(..., max_length=255)
 
 
 # --- Macrocycle Schemas ---
@@ -132,6 +154,7 @@ class ExerciseBase(BaseModel):
     name: str = Field(..., max_length=255)
     description: str | None = Field(default=None, max_length=1024)
     type: ExerciseType = ExerciseType.REPS
+    equipment: Equipment
 
 
 class ExerciseCreate(ExerciseBase):
@@ -142,6 +165,7 @@ class ExerciseUpdate(BaseModel):
     name: str | None = Field(default=None, max_length=255)
     description: str | None = Field(default=None, max_length=1024)
     type: ExerciseType | None = None
+    equipment: Equipment | None = None
 
 
 class ExerciseRead(ExerciseBase):
@@ -155,6 +179,7 @@ class ExerciseRead(ExerciseBase):
 
 
 class SetBase(BaseModel):
+    position: int = 0
     type_: SetType = SetType.WORKSET
     note: str | None = Field(default=None, max_length=1024)
     weight: float | None = None
@@ -168,6 +193,7 @@ class SetCreate(SetBase):
 
 
 class SetUpdate(BaseModel):
+    position: int | None = None
     type_: SetType | None = None
     note: str | None = Field(default=None, max_length=1024)
     weight: float | None = None
@@ -235,6 +261,7 @@ class RepSetRead(BaseModel):
     rest: int | None = None
     workout_id: int | None = None
     exercise_id: int | None = None
+    position: int = 0
     reps: int | None = None
     tempo_excentric: int = 0
     tempo_isometric: int = 0
@@ -277,6 +304,7 @@ class DurationSetRead(BaseModel):
     rest: int | None = None
     workout_id: int | None = None
     exercise_id: int | None = None
+    position: int = 0
     duration: int = 0
 
     model_config = ConfigDict(from_attributes=True)
