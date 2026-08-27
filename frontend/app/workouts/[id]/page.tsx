@@ -4,170 +4,166 @@ import { PlannedWorkoutActions } from "@/components/planned-workout-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import {
-	api,
-	type DurationSet,
-	type Exercise,
-	type RepSet,
-	type Workout,
+  api,
+  type DurationSet,
+  type Exercise,
+  type RepSet,
+  type Workout,
 } from "@/lib/api";
 
 export default async function WorkoutDetailPage({
-	params,
+  params,
 }: {
-	params: Promise<{ id: string }>;
+  params: Promise<{ id: string }>;
 }) {
-	const { id } = await params;
-	const workoutId = Number.parseInt(id, 10);
+  const { id } = await params;
+  const workoutId = Number.parseInt(id, 10);
 
-	const workout: Workout = await api.getWorkout(workoutId);
-	if (!workout) {
-		notFound();
-	}
+  const workout: Workout = await api.getWorkout(workoutId);
+  if (!workout) {
+    notFound();
+  }
 
-	const exercises: Exercise[] = await api.getExercises();
-	const repSets: RepSet[] = await api.getRepSets();
-	const durationSets: DurationSet[] = await api.getDurationSets();
+  const exercises: Exercise[] = await api.getExercises();
+  const repSets: RepSet[] = await api.getRepSets();
+  const durationSets: DurationSet[] = await api.getDurationSets();
 
-	const workoutRepSets = repSets.filter((set) => set.workout_id === workoutId);
-	const workoutDurationSets = durationSets.filter(
-		(set) => set.workout_id === workoutId,
-	);
+  const workoutRepSets = repSets.filter((set) => set.workout_id === workoutId);
+  const workoutDurationSets = durationSets.filter(
+    (set) => set.workout_id === workoutId,
+  );
 
-	const exerciseSets = new Map<number, (RepSet | DurationSet)[]>();
+  const exerciseSets = new Map<number, (RepSet | DurationSet)[]>();
+  const orderedSets = [...workoutRepSets, ...workoutDurationSets].sort(
+    (a, b) => a.position - b.position,
+  );
 
-	for (const set of workoutRepSets) {
-		if (!exerciseSets.has(set.exercise_id)) {
-			exerciseSets.set(set.exercise_id, []);
-		}
-		exerciseSets.get(set.exercise_id)?.push(set);
-	}
+  for (const set of orderedSets) {
+    if (!exerciseSets.has(set.exercise_id)) {
+      exerciseSets.set(set.exercise_id, []);
+    }
+    exerciseSets.get(set.exercise_id)?.push(set);
+  }
 
-	for (const set of workoutDurationSets) {
-		if (!exerciseSets.has(set.exercise_id)) {
-			exerciseSets.set(set.exercise_id, []);
-		}
-		exerciseSets.get(set.exercise_id)?.push(set);
-	}
+  return (
+    <div className="container mx-auto p-6">
+      <Link
+        href="/workouts"
+        className="text-blue-600 hover:underline mb-4 inline-block"
+      >
+        ← Back to Workouts
+      </Link>
 
-	return (
-		<div className="container mx-auto p-6">
-			<Link
-				href="/workouts"
-				className="text-blue-600 hover:underline mb-4 inline-block"
-			>
-				← Back to Workouts
-			</Link>
+      <Card className="mt-4">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>{workout.name}</CardTitle>
+            <div className="flex items-center gap-2">
+              {workout.planned && <PlannedWorkoutActions workout={workout} />}
+              <Link href={`/workouts/${id}/active`}>
+                <Button>Start Workout</Button>
+              </Link>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 text-sm text-muted-foreground mb-4">
+            <p>
+              <strong>{workout.planned ? "Created on" : "Completed on"}</strong>{" "}
+              {new Intl.DateTimeFormat(undefined, {
+                dateStyle: "medium",
+                timeStyle: "short",
+              }).format(new Date(workout.creation_date))}
+            </p>
+            {workout.description && <p>{workout.description}</p>}
+          </div>
 
-			<Card className="mt-4">
-				<CardHeader>
-					<div className="flex justify-between items-center">
-						<CardTitle>{workout.name}</CardTitle>
-						<div className="flex items-center gap-2">
-							{workout.planned && <PlannedWorkoutActions workout={workout} />}
-							<Link href={`/workouts/${id}/active`}>
-								<Button>Start Workout</Button>
-							</Link>
-						</div>
-					</div>
-				</CardHeader>
-				<CardContent>
-					<div className="space-y-2 text-sm text-muted-foreground mb-4">
-						<p>
-							<strong>{workout.planned ? "Created on" : "Completed on"}</strong>{" "}
-							{new Intl.DateTimeFormat(undefined, {
-								dateStyle: "medium",
-								timeStyle: "short",
-							}).format(new Date(workout.creation_date))}
-						</p>
-						{workout.description && <p>{workout.description}</p>}
-					</div>
+          <div className="space-y-6">
+            {exerciseSets.size === 0 ? (
+              <p className="text-muted-foreground">
+                No exercises recorded for this workout yet.
+              </p>
+            ) : (
+              Array.from(exerciseSets.entries()).map(([exerciseId, sets]) => {
+                const exercise = exercises.find((e) => e.id === exerciseId);
+                if (!exercise) return null;
 
-					<div className="space-y-6">
-						{exerciseSets.size === 0 ? (
-							<p className="text-muted-foreground">
-								No exercises recorded for this workout yet.
-							</p>
-						) : (
-							Array.from(exerciseSets.entries()).map(([exerciseId, sets]) => {
-								const exercise = exercises.find((e) => e.id === exerciseId);
-								if (!exercise) return null;
+                const isRepExercise = exercise.type === "REPS";
 
-								const isRepExercise = exercise.type === "REPS";
+                return (
+                  <div key={exerciseId}>
+                    <h3 className="text-lg font-semibold mb-2">
+                      {exercise.name}
+                    </h3>
+                    {exercise.description && (
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {exercise.description}
+                      </p>
+                    )}
 
-								return (
-									<div key={exerciseId}>
-										<h3 className="text-lg font-semibold mb-2">
-											{exercise.name}
-										</h3>
-										{exercise.description && (
-											<p className="text-sm text-muted-foreground mb-2">
-												{exercise.description}
-											</p>
-										)}
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Set</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Weight (kg)</TableHead>
+                          {isRepExercise && <TableHead>Reps</TableHead>}
+                          {!isRepExercise && (
+                            <TableHead>Duration (s)</TableHead>
+                          )}
+                          {isRepExercise && <TableHead>Tempo</TableHead>}
+                          <TableHead>RPE</TableHead>
+                          <TableHead>Rest (s)</TableHead>
+                          <TableHead>Note</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sets.map((set, index) => {
+                          const repSet =
+                            isRepExercise && "reps" in set ? set : null;
+                          const tempo = repSet
+                            ? `${repSet.tempo_excentric ?? 0}-${repSet.tempo_isometric ?? 0}-${repSet.tempo_concentric ?? 0}`
+                            : "0-0-0";
 
-										<Table>
-											<TableHeader>
-												<TableRow>
-													<TableHead>Set</TableHead>
-													<TableHead>Type</TableHead>
-													<TableHead>Weight (kg)</TableHead>
-													{isRepExercise && <TableHead>Reps</TableHead>}
-													{!isRepExercise && (
-														<TableHead>Duration (s)</TableHead>
-													)}
-													{isRepExercise && <TableHead>Tempo</TableHead>}
-													<TableHead>RPE</TableHead>
-													<TableHead>Rest (s)</TableHead>
-													<TableHead>Note</TableHead>
-												</TableRow>
-											</TableHeader>
-											<TableBody>
-												{sets.map((set, index) => {
-													const repSet =
-														isRepExercise && "reps" in set ? set : null;
-													const tempo = repSet
-														? `${repSet.tempo_excentric ?? 0}-${repSet.tempo_isometric ?? 0}-${repSet.tempo_concentric ?? 0}`
-														: "0-0-0";
-
-													return (
-														<TableRow key={set.id}>
-															<TableCell>{index + 1}</TableCell>
-															<TableCell>{set.type_}</TableCell>
-															<TableCell>{set.weight ?? 0}</TableCell>
-															{isRepExercise && (
-																<TableCell>
-																	{repSet ? (repSet.reps ?? 0) : 0}
-																</TableCell>
-															)}
-															{!isRepExercise && (
-																<TableCell>
-																	{"duration" in set ? (set.duration ?? 0) : 0}
-																</TableCell>
-															)}
-															{isRepExercise && <TableCell>{tempo}</TableCell>}
-															<TableCell>{set.rpe ?? 0}</TableCell>
-															<TableCell>{set.rest ?? 0}</TableCell>
-															<TableCell>{set.note ?? "-"}</TableCell>
-														</TableRow>
-													);
-												})}
-											</TableBody>
-										</Table>
-									</div>
-								);
-							})
-						)}
-					</div>
-				</CardContent>
-			</Card>
-		</div>
-	);
+                          return (
+                            <TableRow key={set.id}>
+                              <TableCell>{index + 1}</TableCell>
+                              <TableCell>{set.type_}</TableCell>
+                              <TableCell>{set.weight ?? 0}</TableCell>
+                              {isRepExercise && (
+                                <TableCell>
+                                  {repSet ? (repSet.reps ?? 0) : 0}
+                                </TableCell>
+                              )}
+                              {!isRepExercise && (
+                                <TableCell>
+                                  {"duration" in set ? (set.duration ?? 0) : 0}
+                                </TableCell>
+                              )}
+                              {isRepExercise && <TableCell>{tempo}</TableCell>}
+                              <TableCell>{set.rpe ?? 0}</TableCell>
+                              <TableCell>{set.rest ?? 0}</TableCell>
+                              <TableCell>{set.note ?? "-"}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

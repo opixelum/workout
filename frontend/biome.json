@@ -1,10 +1,14 @@
 {
-	"files": {
-		"includes": [
-			"app/**/*.tsx",
-			"components/**/*.tsx",
-			"lib/**/*.ts",
-			"test/**/*.ts"
-		]
-	}
+  "files": {
+    "includes": [
+      "app/**/*.tsx",
+      "components/**/*.tsx",
+      "lib/**/*.ts",
+      "test/**/*.ts"
+    ]
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2
+  }
 }

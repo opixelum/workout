@@ -2,206 +2,206 @@ import Link from "next/link";
 import { NewWorkoutButton } from "@/components/new-workout-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-	api,
-	type DurationSet,
-	type Exercise,
-	type RepSet,
-	type Workout,
+  api,
+  type DurationSet,
+  type Exercise,
+  type RepSet,
+  type Workout,
 } from "@/lib/api";
 
 function getExerciseSetCount(
-	workoutId: number,
-	exerciseId: number,
-	repSets: RepSet[],
-	durationSets: DurationSet[],
+  workoutId: number,
+  exerciseId: number,
+  repSets: RepSet[],
+  durationSets: DurationSet[],
 ): number {
-	const exerciseRepSets = repSets.filter(
-		(s) => s.workout_id === workoutId && s.exercise_id === exerciseId,
-	);
-	const exerciseDurationSets = durationSets.filter(
-		(s) => s.workout_id === workoutId && s.exercise_id === exerciseId,
-	);
-	return exerciseRepSets.length + exerciseDurationSets.length;
+  const exerciseRepSets = repSets.filter(
+    (s) => s.workout_id === workoutId && s.exercise_id === exerciseId,
+  );
+  const exerciseDurationSets = durationSets.filter(
+    (s) => s.workout_id === workoutId && s.exercise_id === exerciseId,
+  );
+  return exerciseRepSets.length + exerciseDurationSets.length;
 }
 
 export default async function WorkoutsPage() {
-	const workouts: Workout[] = await api.getWorkouts();
-	const exercises: Exercise[] = await api.getExercises();
-	const repSets: RepSet[] = await api.getRepSets();
-	const durationSets: DurationSet[] = await api.getDurationSets();
+  const workouts: Workout[] = await api.getWorkouts();
+  const exercises: Exercise[] = await api.getExercises();
+  const repSets: RepSet[] = await api.getRepSets();
+  const durationSets: DurationSet[] = await api.getDurationSets();
 
-	const plannedWorkouts = workouts
-		.filter((w) => w.planned)
-		.sort(
-			(a, b) =>
-				new Date(b.creation_date).getTime() -
-				new Date(a.creation_date).getTime(),
-		);
-	const completedWorkouts = workouts
-		.filter((w) => !w.planned)
-		.sort(
-			(a, b) =>
-				new Date(b.creation_date).getTime() -
-				new Date(a.creation_date).getTime(),
-		);
+  const plannedWorkouts = workouts
+    .filter((w) => w.planned)
+    .sort(
+      (a, b) =>
+        new Date(b.creation_date).getTime() -
+        new Date(a.creation_date).getTime(),
+    );
+  const completedWorkouts = workouts
+    .filter((w) => !w.planned)
+    .sort(
+      (a, b) =>
+        new Date(b.creation_date).getTime() -
+        new Date(a.creation_date).getTime(),
+    );
 
-	return (
-		<div className="container mx-auto p-6 space-y-8">
-			<div className="flex items-center justify-between">
-				<h2 className="text-2xl font-bold">Workouts</h2>
-				<NewWorkoutButton />
-			</div>
-			{/* Planned Workouts Section */}
-			<div>
-				{plannedWorkouts.length === 0 ? (
-					<p className="text-muted-foreground">No planned workouts.</p>
-				) : (
-					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-						{plannedWorkouts.map((workout) => {
-							// Get all exercises for this workout
-							const workoutRepSets = repSets.filter(
-								(s) => s.workout_id === workout.id,
-							);
-							const workoutDurationSets = durationSets.filter(
-								(s) => s.workout_id === workout.id,
-							);
+  return (
+    <div className="container mx-auto p-6 space-y-8">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Workouts</h2>
+        <NewWorkoutButton />
+      </div>
+      {/* Planned Workouts Section */}
+      <div>
+        {plannedWorkouts.length === 0 ? (
+          <p className="text-muted-foreground">No planned workouts.</p>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {plannedWorkouts.map((workout) => {
+              // Get all exercises for this workout
+              const workoutRepSets = repSets.filter(
+                (s) => s.workout_id === workout.id,
+              );
+              const workoutDurationSets = durationSets.filter(
+                (s) => s.workout_id === workout.id,
+              );
 
-							// Get unique exercise IDs
-							const exerciseIds = new Set([
-								...workoutRepSets.map((s) => s.exercise_id),
-								...workoutDurationSets.map((s) => s.exercise_id),
-							]);
+              // Get unique exercise IDs
+              const exerciseIds = new Set([
+                ...workoutRepSets.map((s) => s.exercise_id),
+                ...workoutDurationSets.map((s) => s.exercise_id),
+              ]);
 
-							// Get exercise set counts
-							const exerciseData = Array.from(exerciseIds)
-								.map((exerciseId) => {
-									const exercise = exercises.find((e) => e.id === exerciseId);
-									if (!exercise) return null;
-									const setCount = getExerciseSetCount(
-										workout.id,
-										exerciseId,
-										repSets,
-										durationSets,
-									);
-									return { exercise, setCount };
-								})
-								.filter(
-									(data): data is { exercise: Exercise; setCount: number } =>
-										data !== null,
-								);
+              // Get exercise set counts
+              const exerciseData = Array.from(exerciseIds)
+                .map((exerciseId) => {
+                  const exercise = exercises.find((e) => e.id === exerciseId);
+                  if (!exercise) return null;
+                  const setCount = getExerciseSetCount(
+                    workout.id,
+                    exerciseId,
+                    repSets,
+                    durationSets,
+                  );
+                  return { exercise, setCount };
+                })
+                .filter(
+                  (data): data is { exercise: Exercise; setCount: number } =>
+                    data !== null,
+                );
 
-							return (
-								<Link key={workout.id} href={`/workouts/${workout.id}`}>
-									<Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-										<CardHeader>
-											<CardTitle>{workout.name}</CardTitle>
-										</CardHeader>
-										<CardContent>
-											{workout.description && (
-												<p className="text-sm text-muted-foreground mb-3">
-													{workout.description}
-												</p>
-											)}
-											{exerciseData.length > 0 ? (
-												<ul className="space-y-1 text-sm">
-													{exerciseData.map(({ exercise, setCount }) => (
-														<li key={`${workout.id}-${exercise.id}`}>
-															{setCount} x {exercise.name}
-														</li>
-													))}
-												</ul>
-											) : (
-												<p className="text-sm text-muted-foreground">
-													No exercises added yet.
-												</p>
-											)}
-										</CardContent>
-									</Card>
-								</Link>
-							);
-						})}
-					</div>
-				)}
-			</div>
+              return (
+                <Link key={workout.id} href={`/workouts/${workout.id}`}>
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                    <CardHeader>
+                      <CardTitle>{workout.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {workout.description && (
+                        <p className="text-sm text-muted-foreground mb-3">
+                          {workout.description}
+                        </p>
+                      )}
+                      {exerciseData.length > 0 ? (
+                        <ul className="space-y-1 text-sm">
+                          {exerciseData.map(({ exercise, setCount }) => (
+                            <li key={`${workout.id}-${exercise.id}`}>
+                              {setCount} x {exercise.name}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          No exercises added yet.
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
-			{/* History Section */}
-			<div>
-				<h2 className="text-2xl font-bold mb-4">History</h2>
-				{completedWorkouts.length === 0 ? (
-					<p className="text-muted-foreground">No completed workouts yet.</p>
-				) : (
-					<div className="space-y-4">
-						{completedWorkouts.map((workout) => {
-							// Get all exercises for this workout
-							const workoutRepSets = repSets.filter(
-								(s) => s.workout_id === workout.id,
-							);
-							const workoutDurationSets = durationSets.filter(
-								(s) => s.workout_id === workout.id,
-							);
+      {/* History Section */}
+      <div>
+        <h2 className="text-2xl font-bold mb-4">History</h2>
+        {completedWorkouts.length === 0 ? (
+          <p className="text-muted-foreground">No completed workouts yet.</p>
+        ) : (
+          <div className="space-y-4">
+            {completedWorkouts.map((workout) => {
+              // Get all exercises for this workout
+              const workoutRepSets = repSets.filter(
+                (s) => s.workout_id === workout.id,
+              );
+              const workoutDurationSets = durationSets.filter(
+                (s) => s.workout_id === workout.id,
+              );
 
-							// Get unique exercise IDs
-							const exerciseIds = new Set([
-								...workoutRepSets.map((s) => s.exercise_id),
-								...workoutDurationSets.map((s) => s.exercise_id),
-							]);
+              // Get unique exercise IDs
+              const exerciseIds = new Set([
+                ...workoutRepSets.map((s) => s.exercise_id),
+                ...workoutDurationSets.map((s) => s.exercise_id),
+              ]);
 
-							// Get exercise set counts
-							const exerciseData = Array.from(exerciseIds)
-								.map((exerciseId) => {
-									const exercise = exercises.find((e) => e.id === exerciseId);
-									if (!exercise) return null;
-									const setCount = getExerciseSetCount(
-										workout.id,
-										exerciseId,
-										repSets,
-										durationSets,
-									);
-									return { exercise, setCount };
-								})
-								.filter(
-									(data): data is { exercise: Exercise; setCount: number } =>
-										data !== null,
-								);
+              // Get exercise set counts
+              const exerciseData = Array.from(exerciseIds)
+                .map((exerciseId) => {
+                  const exercise = exercises.find((e) => e.id === exerciseId);
+                  if (!exercise) return null;
+                  const setCount = getExerciseSetCount(
+                    workout.id,
+                    exerciseId,
+                    repSets,
+                    durationSets,
+                  );
+                  return { exercise, setCount };
+                })
+                .filter(
+                  (data): data is { exercise: Exercise; setCount: number } =>
+                    data !== null,
+                );
 
-							return (
-								<Link key={workout.id} href={`/workouts/${workout.id}`}>
-									<Card className="hover:shadow-lg transition-shadow cursor-pointer mb-4">
-										<CardContent>
-											<div className="flex justify-between items-start">
-												<div className="flex-1">
-													<h3 className="text-lg font-semibold mb-2">
-														{workout.name}
-													</h3>
-													{exerciseData.length > 0 ? (
-														<ul className="space-y-1 text-sm text-muted-foreground">
-															{exerciseData.map(({ exercise, setCount }) => (
-																<li key={`${workout.id}-${exercise.id}`}>
-																	{setCount} x {exercise.name}
-																</li>
-															))}
-														</ul>
-													) : (
-														<p className="text-sm text-muted-foreground">
-															No exercises added yet.
-														</p>
-													)}
-												</div>
-												<div className="text-sm text-muted-foreground ml-4">
-													{new Intl.DateTimeFormat(undefined, {
-														dateStyle: "medium",
-														timeStyle: "short",
-													}).format(new Date(workout.creation_date))}
-												</div>
-											</div>
-										</CardContent>
-									</Card>
-								</Link>
-							);
-						})}
-					</div>
-				)}
-			</div>
-		</div>
-	);
+              return (
+                <Link key={workout.id} href={`/workouts/${workout.id}`}>
+                  <Card className="hover:shadow-lg transition-shadow cursor-pointer mb-4">
+                    <CardContent>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold mb-2">
+                            {workout.name}
+                          </h3>
+                          {exerciseData.length > 0 ? (
+                            <ul className="space-y-1 text-sm text-muted-foreground">
+                              {exerciseData.map(({ exercise, setCount }) => (
+                                <li key={`${workout.id}-${exercise.id}`}>
+                                  {setCount} x {exercise.name}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              No exercises added yet.
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-sm text-muted-foreground ml-4">
+                          {new Intl.DateTimeFormat(undefined, {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          }).format(new Date(workout.creation_date))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
