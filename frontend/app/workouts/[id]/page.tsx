@@ -1,8 +1,8 @@
+import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PlannedWorkoutActions } from "@/components/planned-workout-actions";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -58,26 +58,25 @@ export default async function WorkoutDetailPage({
 
   return (
     <div className="container mx-auto p-6">
-      <Link
-        href="/workouts"
-        className="text-blue-600 hover:underline mb-4 inline-block"
-      >
-        Back to Workouts
-      </Link>
-
-      <Card className="mt-4">
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>{workout.name}</CardTitle>
-            <div className="flex items-center gap-2">
-              {workout.planned && <PlannedWorkoutActions workout={workout} />}
-              <Link href={`/workouts/${id}/active`}>
-                <Button>Start Workout</Button>
-              </Link>
-            </div>
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center">
+            <Link href="/workouts" className="flex items-center">
+              <Button variant="ghost" className="-ml-4 flex items-center">
+                <ChevronLeft className="size-8" />
+              </Button>
+            </Link>
+            <h2 className="text-2xl font-bold">{workout.name}</h2>
           </div>
-        </CardHeader>
-        <CardContent>
+          <div className="flex items-center gap-2">
+            {workout.planned && <PlannedWorkoutActions workout={workout} />}
+            <Link href={`/workouts/${id}/active`}>
+              <Button>Start</Button>
+            </Link>
+          </div>
+        </div>
+
+        <div>
           <div className="space-y-2 text-sm text-muted-foreground mb-4">
             <p>
               <strong>{workout.planned ? "Created on" : "Completed on"}</strong>{" "}
@@ -169,8 +168,8 @@ export default async function WorkoutDetailPage({
               })
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

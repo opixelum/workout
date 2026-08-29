@@ -18,13 +18,12 @@ export function PlannedWorkoutActions({ workout }: { workout: Workout }) {
   return (
     <div className="flex items-center gap-2">
       <Link href={`/workouts/${workout.id}/edit`}>
-        <Button variant="outline" size="icon-sm" title="Edit workout">
+        <Button variant="outline" title="Edit workout">
           <Pencil aria-hidden="true" />
         </Button>
       </Link>
       <Button
         variant="destructive"
-        size="icon-sm"
         className="border-destructive/40"
         onClick={handleDelete}
         title="Delete workout"
