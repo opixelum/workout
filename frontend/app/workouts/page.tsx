@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { NewWorkoutButton } from "@/components/new-workout-button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   api,
   type DurationSet,
@@ -46,7 +46,7 @@ export default async function WorkoutsPage() {
     );
 
   return (
-    <div className="container mx-auto p-6 space-y-8">
+    <div className="container mx-auto p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Workouts</h2>
         <NewWorkoutButton />
@@ -93,17 +93,11 @@ export default async function WorkoutsPage() {
               return (
                 <Link key={workout.id} href={`/workouts/${workout.id}`}>
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-                    <CardHeader>
-                      <CardTitle>{workout.name}</CardTitle>
-                    </CardHeader>
                     <CardContent>
-                      {workout.description && (
-                        <p className="text-sm text-muted-foreground mb-3">
-                          {workout.description}
-                        </p>
-                      )}
+                      <h3 className="text-lg font-semibold">{workout.name}</h3>
+                      {workout.description && <p>{workout.description}</p>}
                       {exerciseData.length > 0 ? (
-                        <ul className="space-y-1 text-sm">
+                        <ul className="text-sm text-muted-foreground">
                           {exerciseData.map(({ exercise, setCount }) => (
                             <li key={`${workout.id}-${exercise.id}`}>
                               {setCount} x {exercise.name}
@@ -130,7 +124,7 @@ export default async function WorkoutsPage() {
         {completedWorkouts.length === 0 ? (
           <p className="text-muted-foreground">No completed workouts yet.</p>
         ) : (
-          <div className="space-y-4">
+          <div>
             {completedWorkouts.map((workout) => {
               // Get all exercises for this workout
               const workoutRepSets = repSets.filter(
@@ -169,7 +163,7 @@ export default async function WorkoutsPage() {
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer mb-4">
                     <CardContent>
                       <div className="flex justify-between items-start">
-                        <h3 className="text-lg font-semibold mb-2">
+                        <h3 className="text-lg font-semibold">
                           {workout.name}
                         </h3>
                         <div className="text-sm text-muted-foreground ml-4">
@@ -179,8 +173,9 @@ export default async function WorkoutsPage() {
                           }).format(new Date(workout.creation_date))}
                         </div>
                       </div>
+                      <p>{workout.description}</p>
                       {exerciseData.length > 0 ? (
-                        <ul className="space-y-1 text-sm text-muted-foreground">
+                        <ul className="text-sm text-muted-foreground">
                           {exerciseData.map(({ exercise, setCount }) => (
                             <li key={`${workout.id}-${exercise.id}`}>
                               {setCount} x {exercise.name}

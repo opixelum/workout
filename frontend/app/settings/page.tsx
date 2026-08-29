@@ -4,7 +4,6 @@ import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, type User } from "@/lib/api";
@@ -72,83 +71,78 @@ export default function SettingsPage() {
 
   return (
     <div className="container mx-auto p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <form className="space-y-4" onSubmit={handleUpdateAccount}>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(event) => {
-                  setEmail(event.target.value);
-                  setUpdated(false);
-                }}
-                required
+      <div className="space-y-6">
+        <form className="space-y-4" onSubmit={handleUpdateAccount}>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setUpdated(false);
+              }}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bodyweight">Bodyweight (kg)</Label>
+            <Input
+              id="bodyweight"
+              type="number"
+              min="0"
+              step="0.1"
+              value={bodyweight}
+              onChange={(event) => {
+                setBodyweight(event.target.value);
+                setUpdated(false);
+              }}
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button type="submit" disabled={!hasChanges || saving}>
+              {saving ? "Updating..." : "Update account"}
+            </Button>
+            {updated && (
+              <Check
+                className="account-success text-green-600"
+                aria-label="Account updated successfully"
+                onAnimationEnd={() => setUpdated(false)}
               />
-            </div>
+            )}
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </form>
 
-            <div className="space-y-2">
-              <Label htmlFor="bodyweight">Bodyweight (kg)</Label>
-              <Input
-                id="bodyweight"
-                type="number"
-                min="0"
-                step="0.1"
-                value={bodyweight}
-                onChange={(event) => {
-                  setBodyweight(event.target.value);
-                  setUpdated(false);
-                }}
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button type="submit" disabled={!hasChanges || saving}>
-                {saving ? "Updating..." : "Update account"}
-              </Button>
-              {updated && (
-                <Check
-                  className="account-success text-green-600"
-                  aria-label="Account updated successfully"
-                  onAnimationEnd={() => setUpdated(false)}
-                />
-              )}
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-          </form>
-
-          <div className="border-t pt-6 space-y-4">
+        <div className="border-t pt-6 space-y-4">
+          <div>
             <div>
-              <div>
-                <h3 className="text-lg font-semibold">Appearance</h3>
-                <p className="text-sm text-muted-foreground">
-                  Choose your preferred display theme.
-                </p>
-              </div>
-              <div className="mt-3">
-                <ThemeToggle />
-              </div>
+              <h3 className="text-lg font-semibold">Appearance</h3>
+              <p className="text-sm text-muted-foreground">
+                Choose your preferred display theme.
+              </p>
+            </div>
+            <div className="mt-3">
+              <ThemeToggle />
             </div>
           </div>
+        </div>
 
-          <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold mb-4">Password</h3>
-            <Button variant="outline">Change Password</Button>
-          </div>
+        <div className="border-t pt-6">
+          <h3 className="text-lg font-semibold mb-4">Password</h3>
+          <Button variant="outline">Change Password</Button>
+        </div>
 
-          <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold mb-4 text-red-600">
-              Danger Zone
-            </h3>
-            <Button variant="destructive">Delete Account</Button>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="border-t pt-6">
+          <h3 className="text-lg font-semibold mb-4 text-red-600">
+            Danger Zone
+          </h3>
+          <Button variant="destructive">Delete Account</Button>
+        </div>
+      </div>
     </div>
   );
 }

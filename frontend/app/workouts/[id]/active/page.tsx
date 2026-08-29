@@ -3,7 +3,6 @@ import { Check, FileEdit, GripHorizontal, Trash2, X } from "lucide-react";
 import { notFound, usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -809,12 +808,12 @@ export default function ActiveWorkoutPage({
             ) : (
               <div className="w-full">
                 <div className="flex justify-between">
-                <h1 className="text-2xl font-bold">{workout.name}</h1>
-            {!isFormMode && (
-              <div className="text-2xl font-mono">
-                {formatTime(elapsedTime)}
-              </div>
-            )}
+                  <h1 className="text-2xl font-bold">{workout.name}</h1>
+                  {!isFormMode && (
+                    <div className="text-2xl font-mono">
+                      {formatTime(elapsedTime)}
+                    </div>
+                  )}
                 </div>
                 {workout.description && (
                   <p className="mt-2 text-sm text-muted-foreground">
@@ -824,51 +823,49 @@ export default function ActiveWorkoutPage({
               </div>
             )}
           </div>
-            {!isFormMode && activeRestTime && (
-              <div className="flex justify-center gap-2 m-2">
-                <div className="text-lg font-medium text-orange-600">
-                  Rest: {activeRestTime.remaining}s
-                </div>
-                <div className="flex gap-1">
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    onClick={() => setActiveRestTime(null)}
-                  >
-                    Skip
-                  </Button>
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    onClick={() =>
-                      setActiveRestTime((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              remaining: Math.max(0, prev.remaining - 15),
-                            }
-                          : null,
-                      )
-                    }
-                  >
-                    -15s
-                  </Button>
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    onClick={() =>
-                      setActiveRestTime((prev) =>
-                        prev
-                          ? { ...prev, remaining: prev.remaining + 15 }
-                          : null,
-                      )
-                    }
-                  >
-                    +15s
-                  </Button>
-                </div>
+          {!isFormMode && activeRestTime && (
+            <div className="flex justify-center gap-2 m-2">
+              <div className="text-lg font-medium text-orange-600">
+                Rest: {activeRestTime.remaining}s
               </div>
-            )}
+              <div className="flex gap-1">
+                <Button
+                  size="xs"
+                  variant="outline"
+                  onClick={() => setActiveRestTime(null)}
+                >
+                  Skip
+                </Button>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  onClick={() =>
+                    setActiveRestTime((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            remaining: Math.max(0, prev.remaining - 15),
+                          }
+                        : null,
+                    )
+                  }
+                >
+                  -15s
+                </Button>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  onClick={() =>
+                    setActiveRestTime((prev) =>
+                      prev ? { ...prev, remaining: prev.remaining + 15 } : null,
+                    )
+                  }
+                >
+                  +15s
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
         <div>
           {orderedExerciseGroups.length === 0 ? (
