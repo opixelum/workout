@@ -772,8 +772,8 @@ export default function ActiveWorkoutPage({
 
   return (
     <div className="container mx-auto p-6">
-      <Card className="mt-4">
-        <CardHeader>
+      <div className="mt-4">
+        <div>
           <div className="flex flex-col items-end">
             {isFormMode ? (
               <div className="w-full space-y-3">
@@ -808,21 +808,24 @@ export default function ActiveWorkoutPage({
               </div>
             ) : (
               <div className="w-full">
-                <CardTitle>{workout.name}</CardTitle>
-                {workout.description && (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {workout.description}
-                  </p>
-                )}
-              </div>
-            )}
+                <div className="flex justify-between">
+                <h1 className="text-2xl font-bold">{workout.name}</h1>
             {!isFormMode && (
               <div className="text-2xl font-mono">
                 {formatTime(elapsedTime)}
               </div>
             )}
+                </div>
+                {workout.description && (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {workout.description}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
             {!isFormMode && activeRestTime && (
-              <div className="flex items-center gap-2">
+              <div className="flex justify-center gap-2 m-2">
                 <div className="text-lg font-medium text-orange-600">
                   Rest: {activeRestTime.remaining}s
                 </div>
@@ -840,19 +843,6 @@ export default function ActiveWorkoutPage({
                     onClick={() =>
                       setActiveRestTime((prev) =>
                         prev
-                          ? { ...prev, remaining: prev.remaining + 15 }
-                          : null,
-                      )
-                    }
-                  >
-                    +15s
-                  </Button>
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    onClick={() =>
-                      setActiveRestTime((prev) =>
-                        prev
                           ? {
                               ...prev,
                               remaining: Math.max(0, prev.remaining - 15),
@@ -863,12 +853,24 @@ export default function ActiveWorkoutPage({
                   >
                     -15s
                   </Button>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    onClick={() =>
+                      setActiveRestTime((prev) =>
+                        prev
+                          ? { ...prev, remaining: prev.remaining + 15 }
+                          : null,
+                      )
+                    }
+                  >
+                    +15s
+                  </Button>
                 </div>
               </div>
             )}
-          </div>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div>
           {orderedExerciseGroups.length === 0 ? (
             <p className="text-muted-foreground">
               No exercises in this workout.
@@ -1646,8 +1648,8 @@ export default function ActiveWorkoutPage({
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
