@@ -1171,7 +1171,7 @@ export default function ActiveWorkoutPage({
                                           ? String(set.rpe)
                                           : "")
                                     }
-                                    className="text-center"
+                                    className="text-center w-12"
                                     min="1"
                                     max="10"
                                     step="0.5"
@@ -1220,15 +1220,13 @@ export default function ActiveWorkoutPage({
                           })}
                         </TableBody>
                       </Table>
-                      <div className="mt-4 flex justify-center">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleAddSet(groupId)}
-                        >
-                          Add set
-                        </Button>
-                      </div>
+                      <Button
+                        className="w-full mt-2"
+                        variant="outline"
+                        onClick={() => handleAddSet(groupId)}
+                      >
+                        + Add set
+                      </Button>
                     </div>
                     {showAfter && <div className="h-1 rounded bg-blue-500" />}
                   </div>
@@ -1237,20 +1235,19 @@ export default function ActiveWorkoutPage({
             </div>
           )}
 
-          <div className="mt-6 flex justify-center">
-            <Button
-              variant="outline"
-              disabled={availableExercises.length === 0}
-              onClick={() => {
-                setSelectedExerciseId(availableExercises[0]?.id ?? null);
-                setExerciseDialogOpen(true);
-              }}
-            >
-              Add exercise
-            </Button>
-          </div>
+          <Button
+            className="w-full my-4"
+            variant="outline"
+            disabled={availableExercises.length === 0}
+            onClick={() => {
+              setSelectedExerciseId(availableExercises[0]?.id ?? null);
+              setExerciseDialogOpen(true);
+            }}
+          >
+            + Add exercise
+          </Button>
 
-          <div className="flex gap-4 mt-6 pt-4 border-t">
+          <div className="flex gap-4">
             <Button
               variant="outline"
               className="flex-1"
