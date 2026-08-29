@@ -63,6 +63,7 @@ def test_api_full_flow(client):
         json={
             "name": "API Test Bench Press",
             "user_id": user_id,
+            "description": "API Test Description",
             "type": "REPS",
             "equipment": "BARBELL",
         },
@@ -91,14 +92,12 @@ def test_api_full_flow(client):
             "weight": 100.0,
             "rest": 120,
             "reps": 8,
-            "tempo": [3, 1, 1],
         },
     )
     assert resp.status_code == 201
     repset_data = resp.json()
     repset_id = repset_data["id"]
     assert repset_data["reps"] == 8
-    assert repset_data["tempo_excentric"] == 3
 
     # Update RepSet
     resp = client.put(

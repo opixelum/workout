@@ -371,12 +371,10 @@ def test_set_lifecycle(db_session):
     new_exercise_id = _create_exercise(db_session, user_id, "New test exercise")
 
     type_ = schemas.SetType.WORKSET
-    note = "A test set"
     weight = 100.0
     rpe = 8.5
     rest = 120
     new_type = schemas.SetType.WARMUP
-    new_note = "An updated test set"
     new_weight = 80.0
     new_rpe = 7.0
     new_rest = 90
@@ -384,7 +382,6 @@ def test_set_lifecycle(db_session):
     # Create set
     set_in = schemas.SetCreate(
         type_=type_,
-        note=note,
         weight=weight,
         rpe=rpe,
         rest=rest,
@@ -401,7 +398,6 @@ def test_set_lifecycle(db_session):
     assert set_.workout_id == workout_id
     assert set_.exercise_id == exercise_id
     assert set_.type_ == type_.value
-    assert set_.note == note
     assert set_.weight == weight
     assert set_.rpe == rpe
     assert set_.rest == rest
@@ -420,7 +416,6 @@ def test_set_lifecycle(db_session):
     # Update set
     set_in = schemas.SetUpdate(
         type_=new_type,
-        note=new_note,
         weight=new_weight,
         rpe=new_rpe,
         rest=new_rest,
@@ -431,7 +426,6 @@ def test_set_lifecycle(db_session):
     updated_set = crud.get_set(db_session, set_id)
     assert updated_set is not None
     assert updated_set.type_ == new_type.value
-    assert updated_set.note == new_note
     assert updated_set.weight == new_weight
     assert updated_set.rpe == new_rpe
     assert updated_set.rest == new_rest
@@ -454,35 +448,23 @@ def test_rep_set_lifecycle(db_session):
     exercise_id = _create_exercise(db_session, user_id)
 
     type_ = schemas.SetType.WORKSET
-    note = "A test rep set"
     weight = 100.0
     rpe = 9.0
     rest = 120
     reps = 8
-    tempo_excentric = 3
-    tempo_isometric = 1
-    tempo_concentric = 1
     new_type = schemas.SetType.WARMUP
-    new_note = "An updated rep set"
     new_weight = 60.0
     new_rpe = 7.5
     new_rest = 60
     new_reps = 12
-    new_tempo_excentric = 2
-    new_tempo_isometric = 0
-    new_tempo_concentric = 2
 
     # Create rep set
     rep_set_in = schemas.RepSetCreate(
         type_=type_,
-        note=note,
         weight=weight,
         rpe=rpe,
         rest=rest,
         reps=reps,
-        tempo_excentric=tempo_excentric,
-        tempo_isometric=tempo_isometric,
-        tempo_concentric=tempo_concentric,
         workout_id=workout_id,
         exercise_id=exercise_id,
     )
@@ -495,13 +477,9 @@ def test_rep_set_lifecycle(db_session):
     assert rep_set.id is not None
     assert rep_set.set_id is not None
     assert rep_set.reps == reps
-    assert rep_set.tempo_excentric == tempo_excentric
-    assert rep_set.tempo_isometric == tempo_isometric
-    assert rep_set.tempo_concentric == tempo_concentric
     assert rep_set.workout_id == workout_id
     assert rep_set.exercise_id == exercise_id
     assert rep_set.type_ == type_.value
-    assert rep_set.note == note
     assert rep_set.weight == weight
     assert rep_set.rpe == rpe
     assert rep_set.rest == rest
@@ -515,27 +493,19 @@ def test_rep_set_lifecycle(db_session):
     # Update rep set
     rep_set_in = schemas.RepSetUpdate(
         type_=new_type,
-        note=new_note,
         weight=new_weight,
         rpe=new_rpe,
         rest=new_rest,
         reps=new_reps,
-        tempo_excentric=new_tempo_excentric,
-        tempo_isometric=new_tempo_isometric,
-        tempo_concentric=new_tempo_concentric,
     )
     crud.update_rep_set(db_session, rep_set_id, rep_set_in)
     updated_rep_set = crud.get_rep_set(db_session, rep_set_id)
     assert updated_rep_set is not None
     assert updated_rep_set.type_ == new_type.value
-    assert updated_rep_set.note == new_note
     assert updated_rep_set.weight == new_weight
     assert updated_rep_set.rpe == new_rpe
     assert updated_rep_set.rest == new_rest
     assert updated_rep_set.reps == new_reps
-    assert updated_rep_set.tempo_excentric == new_tempo_excentric
-    assert updated_rep_set.tempo_isometric == new_tempo_isometric
-    assert updated_rep_set.tempo_concentric == new_tempo_concentric
 
     # Delete rep set
     crud.delete_rep_set(db_session, rep_set_id)
@@ -555,13 +525,11 @@ def test_duration_set_lifecycle(db_session):
     )
 
     type_ = schemas.SetType.WORKSET
-    note = "A test duration set"
     weight = 0.0
     rpe = 7.0
     rest = 60
     duration = 45
     new_type = schemas.SetType.WARMUP
-    new_note = "An updated duration set"
     new_weight = 10.0
     new_rpe = 6.0
     new_rest = 30
@@ -570,7 +538,6 @@ def test_duration_set_lifecycle(db_session):
     # Create duration set
     duration_set_in = schemas.DurationSetCreate(
         type_=type_,
-        note=note,
         weight=weight,
         rpe=rpe,
         rest=rest,
@@ -590,7 +557,6 @@ def test_duration_set_lifecycle(db_session):
     assert duration_set.workout_id == workout_id
     assert duration_set.exercise_id == exercise_id
     assert duration_set.type_ == type_.value
-    assert duration_set.note == note
     assert duration_set.weight == weight
     assert duration_set.rpe == rpe
     assert duration_set.rest == rest
@@ -604,7 +570,6 @@ def test_duration_set_lifecycle(db_session):
     # Update duration set
     duration_set_in = schemas.DurationSetUpdate(
         type_=new_type,
-        note=new_note,
         weight=new_weight,
         rpe=new_rpe,
         rest=new_rest,
@@ -614,7 +579,6 @@ def test_duration_set_lifecycle(db_session):
     updated_duration_set = crud.get_duration_set(db_session, duration_set_id)
     assert updated_duration_set is not None
     assert updated_duration_set.type_ == new_type.value
-    assert updated_duration_set.note == new_note
     assert updated_duration_set.weight == new_weight
     assert updated_duration_set.rpe == new_rpe
     assert updated_duration_set.rest == new_rest

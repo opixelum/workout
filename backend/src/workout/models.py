@@ -87,6 +87,9 @@ class Workout(Base):
     user = relationship("User", back_populates="workouts")
     mesocycle = relationship("Mesocycle", back_populates="workouts")
     sets = relationship("Set", back_populates="workout", cascade="all, delete-orphan")
+    workout_exercises = relationship(
+        "WorkoutExercise", back_populates="workout", cascade="all, delete-orphan"
+    )
 
 
 class Exercise(Base):
@@ -106,6 +109,34 @@ class Exercise(Base):
 
     user = relationship("User", back_populates="exercises")
     sets = relationship("Set", back_populates="exercise", cascade="all, delete-orphan")
+    workout_exercises = relationship(
+        "WorkoutExercise", back_populates="exercise", cascade="all, delete-orphan"
+    )
+
+
+class WorkoutExercise(Base):
+    __tablename__ = "workout_exercises"
+    __table_args__ = (
+        UniqueConstraint(
+            "workout_id",
+            "exercise_id",
+            "position",
+            name="uq_workout_exercise_position",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    workout_id = Column(
+        Integer, ForeignKey("workouts.id", ondelete="CASCADE"), nullable=False
+    )
+    exercise_id = Column(
+        Integer, ForeignKey("exercises.id", ondelete="CASCADE"), nullable=False
+    )
+    position = Column(Integer, nullable=False, default=0)
+    note = Column(String(1024), nullable=True)
+
+    workout = relationship("Workout", back_populates="workout_exercises")
+    exercise = relationship("Exercise", back_populates="workout_exercises")
 
 
 class Set(Base):
@@ -120,7 +151,6 @@ class Set(Base):
     )
     position = Column(Integer, nullable=False, default=0)
     type_ = Column(String(20), nullable=False, default="WORKSET")
-    note = Column(String(1024), nullable=True)
     weight = Column(Float, nullable=True)
     rpe = Column(Float, nullable=True)
     rest = Column(Integer, nullable=False, default=0)
@@ -149,9 +179,6 @@ class RepSet(Base):
         nullable=False,
     )
     reps = Column(Integer, nullable=True)
-    tempo_excentric = Column(Integer, nullable=False, default=0)
-    tempo_isometric = Column(Integer, nullable=False, default=0)
-    tempo_concentric = Column(Integer, nullable=False, default=0)
 
     set_ = relationship("Set", back_populates="rep_set")
 
@@ -182,14 +209,6 @@ class RepSet(Base):
     @property
     def workout_id(self) -> int | None:
         return self.set_.workout_id if self.set_ else None
-
-    @property
-    def note(self) -> str | None:
-        return self.set_.note if self.set_ else None
-
-    @property
-    def tempo(self) -> tuple[int, int, int]:
-        return (self.tempo_excentric, self.tempo_isometric, self.tempo_concentric)
 
 
 class DurationSet(Base):
@@ -233,7 +252,3 @@ class DurationSet(Base):
     @property
     def workout_id(self) -> int | None:
         return self.set_.workout_id if self.set_ else None
-
-    @property
-    def note(self) -> str | None:
-        return self.set_.note if self.set_ else None

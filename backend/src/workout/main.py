@@ -92,7 +92,9 @@ def delete_user(user_id: int, db: DbSession):
 # --- Authentication ---
 
 
-@app.post("/auth/signup", response_model=schemas.Token, status_code=status.HTTP_201_CREATED)
+@app.post(
+    "/auth/signup", response_model=schemas.Token, status_code=status.HTTP_201_CREATED
+)
 def signup(user: schemas.UserCreate, db: DbSession):
     existing = crud.get_user_by_email(db, user.email)
     if existing:
@@ -105,7 +107,7 @@ def signup(user: schemas.UserCreate, db: DbSession):
     user_dict = user.model_dump()
     user_dict["password"] = hashed_password
     created_user = crud.create_user(db, schemas.UserCreate(**user_dict))
-    
+
     # Generate token for the new user
     access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth.create_access_token(
@@ -407,6 +409,96 @@ def delete_exercise(exercise_id: int, db: DbSession):
     if not crud.delete_exercise(db, exercise_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found"
+        )
+
+
+# --- WorkoutExercises ---
+
+
+@app.post(
+    "/workout_exercises",
+    response_model=schemas.WorkoutExerciseRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_workout_exercise(
+    workout_exercise: schemas.WorkoutExerciseCreate, db: DbSession
+):
+    return crud.create_workout_exercise(db, workout_exercise)
+
+
+@app.get("/workout_exercises", response_model=list[schemas.WorkoutExerciseRead])
+def read_workout_exercises(
+    db: DbSession,
+    workout_id: int | None = None,
+    skip: int = 0,
+    limit: int = 100,
+):
+    return crud.get_workout_exercises(db, workout_id=workout_id, skip=skip, limit=limit)
+
+
+@app.get(
+    "/workout_exercises/{workout_exercise_id}",
+    response_model=schemas.WorkoutExerciseRead,
+)
+def read_workout_exercise(workout_exercise_id: int, db: DbSession):
+    workout_exercise = crud.get_workout_exercise(db, workout_exercise_id)
+    if not workout_exercise:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="WorkoutExercise not found",
+        )
+    return workout_exercise
+
+
+@app.put(
+    "/workout_exercises/{workout_exercise_id}",
+    response_model=schemas.WorkoutExerciseRead,
+)
+def update_workout_exercise_put(
+    workout_exercise_id: int,
+    workout_exercise_in: schemas.WorkoutExerciseUpdate,
+    db: DbSession,
+):
+    workout_exercise = crud.update_workout_exercise(
+        db, workout_exercise_id, workout_exercise_in
+    )
+    if not workout_exercise:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="WorkoutExercise not found",
+        )
+    return workout_exercise
+
+
+@app.patch(
+    "/workout_exercises/{workout_exercise_id}",
+    response_model=schemas.WorkoutExerciseRead,
+)
+def update_workout_exercise_patch(
+    workout_exercise_id: int,
+    workout_exercise_in: schemas.WorkoutExerciseUpdate,
+    db: DbSession,
+):
+    workout_exercise = crud.update_workout_exercise(
+        db, workout_exercise_id, workout_exercise_in
+    )
+    if not workout_exercise:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="WorkoutExercise not found",
+        )
+    return workout_exercise
+
+
+@app.delete(
+    "/workout_exercises/{workout_exercise_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_workout_exercise(workout_exercise_id: int, db: DbSession):
+    if not crud.delete_workout_exercise(db, workout_exercise_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="WorkoutExercise not found",
         )
 
 

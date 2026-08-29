@@ -1,8 +1,7 @@
 from datetime import datetime
 from enum import Enum
-from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SetType(str, Enum):
@@ -175,13 +174,38 @@ class ExerciseRead(ExerciseBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+# --- WorkoutExercise Schemas ---
+
+
+class WorkoutExerciseBase(BaseModel):
+    position: int = 0
+    note: str | None = Field(default=None, max_length=1024)
+
+
+class WorkoutExerciseCreate(WorkoutExerciseBase):
+    workout_id: int
+    exercise_id: int
+
+
+class WorkoutExerciseUpdate(BaseModel):
+    position: int | None = None
+    note: str | None = Field(default=None, max_length=1024)
+
+
+class WorkoutExerciseRead(WorkoutExerciseBase):
+    id: int
+    workout_id: int
+    exercise_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 # --- Set Schemas ---
 
 
 class SetBase(BaseModel):
     position: int = 0
     type_: SetType = SetType.WORKSET
-    note: str | None = Field(default=None, max_length=1024)
     weight: float | None = None
     rpe: float | None = Field(default=None, ge=1.0, le=10.0)
     rest: int = 0
@@ -195,7 +219,6 @@ class SetCreate(SetBase):
 class SetUpdate(BaseModel):
     position: int | None = None
     type_: SetType | None = None
-    note: str | None = Field(default=None, max_length=1024)
     weight: float | None = None
     rpe: float | None = Field(default=None, ge=1.0, le=10.0)
     rest: int | None = None
@@ -216,9 +239,6 @@ class SetRead(SetBase):
 
 class RepSetBase(SetBase):
     reps: int | None = None
-    tempo_excentric: int = 0
-    tempo_isometric: int = 0
-    tempo_concentric: int = 0
 
 
 class RepSetCreate(RepSetBase):
@@ -228,34 +248,18 @@ class RepSetCreate(RepSetBase):
 
 class RepSetUpdate(BaseModel):
     type_: SetType | None = None
-    note: str | None = Field(default=None, max_length=1024)
     weight: float | None = None
     rpe: float | None = Field(default=None, ge=1.0, le=10.0)
     rest: int | None = None
     workout_id: int | None = None
     exercise_id: int | None = None
     reps: int | None = None
-    tempo_excentric: int | None = None
-    tempo_isometric: int | None = None
-    tempo_concentric: int | None = None
-    tempo: tuple[int, int, int] | None = None
-
-    @model_validator(mode="before")
-    @classmethod
-    def handle_tempo(cls, data: Any) -> Any:
-        if isinstance(data, dict) and "tempo" in data and data["tempo"] is not None:
-            t = data["tempo"]
-            data["tempo_excentric"] = t[0]
-            data["tempo_isometric"] = t[1]
-            data["tempo_concentric"] = t[2]
-        return data
 
 
 class RepSetRead(BaseModel):
     id: int
     set_id: int
     type_: str | None = None
-    note: str | None = None
     weight: float | None = None
     rpe: float | None = None
     rest: int | None = None
@@ -263,10 +267,6 @@ class RepSetRead(BaseModel):
     exercise_id: int | None = None
     position: int = 0
     reps: int | None = None
-    tempo_excentric: int = 0
-    tempo_isometric: int = 0
-    tempo_concentric: int = 0
-    tempo: tuple[int, int, int] | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -285,7 +285,6 @@ class DurationSetCreate(DurationSetBase):
 
 class DurationSetUpdate(BaseModel):
     type_: SetType | None = None
-    note: str | None = Field(default=None, max_length=1024)
     weight: float | None = None
     rpe: float | None = Field(default=None, ge=1.0, le=10.0)
     rest: int | None = None
@@ -298,7 +297,6 @@ class DurationSetRead(BaseModel):
     id: int
     set_id: int
     type_: str | None = None
-    note: str | None = None
     weight: float | None = None
     rpe: float | None = None
     rest: int | None = None

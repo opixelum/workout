@@ -311,6 +311,85 @@ def delete_exercise(db: Session, exercise_id: int) -> bool:
     return True
 
 
+# --- WorkoutExercise CRUD ---
+
+
+def get_workout_exercise(
+    db: Session, workout_exercise_id: int
+) -> models.WorkoutExercise | None:
+    return (
+        db.query(models.WorkoutExercise)
+        .filter(models.WorkoutExercise.id == workout_exercise_id)
+        .first()
+    )
+
+
+def get_workout_exercises(
+    db: Session,
+    workout_id: int | None = None,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[models.WorkoutExercise]:
+    query = db.query(models.WorkoutExercise)
+    if workout_id is not None:
+        query = query.filter(models.WorkoutExercise.workout_id == workout_id)
+    return (
+        query.order_by(models.WorkoutExercise.position).offset(skip).limit(limit).all()
+    )
+
+
+def create_workout_exercise(
+    db: Session,
+    workout_exercise: schemas.WorkoutExerciseCreate,
+) -> models.WorkoutExercise:
+    db_workout_exercise = models.WorkoutExercise(
+        workout_id=workout_exercise.workout_id,
+        exercise_id=workout_exercise.exercise_id,
+        position=workout_exercise.position,
+        note=workout_exercise.note,
+    )
+    db.add(db_workout_exercise)
+    db.commit()
+    db.refresh(db_workout_exercise)
+    return db_workout_exercise
+
+
+def update_workout_exercise(
+    db: Session,
+    workout_exercise_id: int,
+    workout_exercise_in: schemas.WorkoutExerciseUpdate,
+) -> models.WorkoutExercise | None:
+    db_workout_exercise = get_workout_exercise(db, workout_exercise_id)
+    if not db_workout_exercise:
+        return None
+    update_data = workout_exercise_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(db_workout_exercise, field, value)
+    db.commit()
+    db.refresh(db_workout_exercise)
+    return db_workout_exercise
+
+
+def delete_workout_exercise(db: Session, workout_exercise_id: int) -> bool:
+    db_workout_exercise = get_workout_exercise(db, workout_exercise_id)
+    if not db_workout_exercise:
+        return False
+    db.delete(db_workout_exercise)
+    db.commit()
+    return True
+
+
+def delete_workout_exercises_by_workout(db: Session, workout_id: int) -> int:
+    """Delete all workout_exercise entries for a given workout. Returns count deleted."""
+    count = (
+        db.query(models.WorkoutExercise)
+        .filter(models.WorkoutExercise.workout_id == workout_id)
+        .delete()
+    )
+    db.commit()
+    return count
+
+
 # --- Set CRUD ---
 
 
@@ -330,7 +409,12 @@ def get_sets(
         query = query.filter(models.Set.workout_id == workout_id)
     if exercise_id is not None:
         query = query.filter(models.Set.exercise_id == exercise_id)
-    return query.order_by(models.Set.position, models.Set.id).offset(skip).limit(limit).all()
+    return (
+        query.order_by(models.Set.position, models.Set.id)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 
 def create_set(db: Session, set_in: schemas.SetCreate) -> models.Set:
@@ -341,7 +425,6 @@ def create_set(db: Session, set_in: schemas.SetCreate) -> models.Set:
     )
     db_set = models.Set(
         type_=type_val,
-        note=set_in.note,
         weight=set_in.weight,
         rpe=set_in.rpe,
         rest=set_in.rest,
@@ -417,7 +500,6 @@ def create_rep_set(
     )
     db_set = models.Set(
         type_=type_val,
-        note=rep_set.note,
         weight=rep_set.weight,
         rpe=rep_set.rpe,
         rest=rep_set.rest,
@@ -431,9 +513,6 @@ def create_rep_set(
     db_rep_set = models.RepSet(
         set_id=db_set.id,
         reps=rep_set.reps,
-        tempo_excentric=rep_set.tempo_excentric,
-        tempo_isometric=rep_set.tempo_isometric,
-        tempo_concentric=rep_set.tempo_concentric,
     )
     db.add(db_rep_set)
     db.commit()
@@ -454,7 +533,6 @@ def update_rep_set(
     set_fields = {
         "position",
         "type_",
-        "note",
         "weight",
         "rpe",
         "rest",
@@ -472,9 +550,6 @@ def update_rep_set(
     # RepSet table fields
     rep_set_fields = {
         "reps",
-        "tempo_excentric",
-        "tempo_isometric",
-        "tempo_concentric",
     }
     for field in rep_set_fields:
         if field in update_data:
@@ -535,7 +610,6 @@ def create_duration_set(
     )
     db_set = models.Set(
         type_=type_val,
-        note=duration_set.note,
         weight=duration_set.weight,
         rpe=duration_set.rpe,
         rest=duration_set.rest,
@@ -571,7 +645,6 @@ def update_duration_set(
     set_fields = {
         "position",
         "type_",
-        "note",
         "weight",
         "rpe",
         "rest",
