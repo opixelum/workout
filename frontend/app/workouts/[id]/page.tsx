@@ -59,7 +59,7 @@ export default async function WorkoutDetailPage({
         href="/workouts"
         className="text-blue-600 hover:underline mb-4 inline-block"
       >
-        ← Back to Workouts
+        Back to Workouts
       </Link>
 
       <Card className="mt-4">
