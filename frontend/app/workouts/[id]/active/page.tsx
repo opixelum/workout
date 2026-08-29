@@ -60,6 +60,36 @@ const SET_TYPE_COLORS: Record<string, string> = {
   WORKSET: "bg-background",
 };
 
+const SET_TYPE_SHORT_LABELS: Record<string, string> = {
+  WARMUP: "W",
+  DROPSET: "D",
+  SUPERSET: "S",
+  FAILURE: "F",
+};
+
+function getSetTypeDisplay(
+  currentSet: RepSet | DurationSet,
+  allExerciseSets: (RepSet | DurationSet)[],
+  selectedSetTypes: Map<number, string>,
+): string {
+  const currentType = selectedSetTypes.get(currentSet.id) || currentSet.type_;
+  if (currentType === "WORKSET") {
+    let worksetCount = 0;
+    for (const s of allExerciseSets) {
+      const type = selectedSetTypes.get(s.id) || s.type_;
+      if (type === "WORKSET") {
+        worksetCount++;
+      }
+      if (s.id === currentSet.id) {
+        break;
+      }
+    }
+    return String(worksetCount);
+  }
+
+  return SET_TYPE_SHORT_LABELS[currentType] || currentType.charAt(0);
+}
+
 export default function ActiveWorkoutPage({
   params,
 }: {
@@ -967,8 +997,7 @@ export default function ActiveWorkoutPage({
                       </div>
 
                       <div className="flex flex-wrap justify-between items-center gap-2 mb-2 text-sm font-medium text-muted-foreground border-b pb-2">
-                        <span className="w-8">#</span>
-                        <span className="w-24">Type</span>
+                        <span className="w-16">Type</span>
                         <span className="w-20">{weightLabel}</span>
                         {isRepExercise ? (
                           <>
@@ -984,7 +1013,7 @@ export default function ActiveWorkoutPage({
                       </div>
 
                       <div className="space-y-3">
-                        {sets.map((set, index) => {
+                        {sets.map((set) => {
                           const completion = setCompletions.get(set.id);
                           const isCompleted = completion?.completed;
                           const actualValues = completion?.actualValues || {};
@@ -1002,10 +1031,6 @@ export default function ActiveWorkoutPage({
                                   : "bg-background"
                               }`}
                             >
-                              <span className="font-medium w-8">
-                                {index + 1}
-                              </span>
-
                               <Select
                                 value={
                                   selectedSetTypes.get(set.id) || set.type_
@@ -1026,7 +1051,7 @@ export default function ActiveWorkoutPage({
                                 }}
                               >
                                 <SelectTrigger
-                                  className={`w-28 border px-2 py-1 text-sm ${
+                                  className={`w-16 border px-2 py-1 text-sm ${
                                     isCompleted &&
                                     (selectedSetTypes.get(set.id) ||
                                       set.type_) === "WORKSET"
@@ -1034,7 +1059,13 @@ export default function ActiveWorkoutPage({
                                       : selectColor
                                   }`}
                                 >
-                                  <SelectValue />
+                                  <SelectValue>
+                                    {getSetTypeDisplay(
+                                      set,
+                                      sets,
+                                      selectedSetTypes,
+                                    )}
+                                  </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                   {SET_TYPES.map((type) => (
