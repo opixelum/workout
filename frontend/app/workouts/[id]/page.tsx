@@ -17,6 +17,7 @@ import {
   type Exercise,
   type RepSet,
   type Workout,
+  type WorkoutExercise,
 } from "@/lib/api";
 
 export default async function WorkoutDetailPage({
@@ -33,6 +34,8 @@ export default async function WorkoutDetailPage({
   }
 
   const exercises: Exercise[] = await api.getExercises();
+  const workoutExercises: WorkoutExercise[] =
+    await api.getWorkoutExercises(workoutId);
   const repSets: RepSet[] = await api.getRepSets();
   const durationSets: DurationSet[] = await api.getDurationSets();
 
@@ -109,11 +112,16 @@ export default async function WorkoutDetailPage({
                     <h3 className="text-lg font-semibold mb-2">
                       {exercise.name}
                     </h3>
-                    {exercise.description && (
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {exercise.description}
-                      </p>
-                    )}
+                    {(() => {
+                      const we = workoutExercises.find(
+                        (w) => w.exercise_id === exerciseId,
+                      );
+                      return we?.note ? (
+                        <p className="text-sm text-muted-foreground mb-2 italic">
+                          {we.note}
+                        </p>
+                      ) : null;
+                    })()}
 
                     <Table>
                       <TableHeader>
@@ -125,19 +133,14 @@ export default async function WorkoutDetailPage({
                           {!isRepExercise && (
                             <TableHead>Duration (s)</TableHead>
                           )}
-                          {isRepExercise && <TableHead>Tempo</TableHead>}
                           <TableHead>RPE</TableHead>
                           <TableHead>Rest (s)</TableHead>
-                          <TableHead>Note</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {sets.map((set, index) => {
                           const repSet =
                             isRepExercise && "reps" in set ? set : null;
-                          const tempo = repSet
-                            ? `${repSet.tempo_excentric ?? 0}-${repSet.tempo_isometric ?? 0}-${repSet.tempo_concentric ?? 0}`
-                            : "0-0-0";
 
                           return (
                             <TableRow key={set.id}>
@@ -154,10 +157,8 @@ export default async function WorkoutDetailPage({
                                   {"duration" in set ? (set.duration ?? 0) : 0}
                                 </TableCell>
                               )}
-                              {isRepExercise && <TableCell>{tempo}</TableCell>}
                               <TableCell>{set.rpe ?? 0}</TableCell>
                               <TableCell>{set.rest ?? 0}</TableCell>
-                              <TableCell>{set.note ?? "-"}</TableCell>
                             </TableRow>
                           );
                         })}

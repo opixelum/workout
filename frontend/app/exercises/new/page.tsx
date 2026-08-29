@@ -83,7 +83,11 @@ export default function NewExercisePage() {
               <Label htmlFor="type">Type</Label>
               <Select
                 value={type}
-                onValueChange={(value: "REPS" | "DURATION") => setType(value)}
+                onValueChange={(value) => {
+                  if (value === "REPS" || value === "DURATION") {
+                    setType(value);
+                  }
+                }}
               >
                 <SelectTrigger id="type">
                   <SelectValue />
@@ -99,16 +103,20 @@ export default function NewExercisePage() {
               <Label htmlFor="equipment">Equipment</Label>
               <Select
                 value={equipment ?? ""}
-                onValueChange={(
-                  value:
-                    | "BARBELL"
-                    | "DUMBBELL"
-                    | "MACHINE"
-                    | "BODYWEIGHT"
-                    | "ASSISTED_BODYWEIGHT",
-                ) => setEquipment(value)}
+                onValueChange={(value) => {
+                  if (value) {
+                    setEquipment(
+                      value as
+                        | "BARBELL"
+                        | "DUMBBELL"
+                        | "MACHINE"
+                        | "BODYWEIGHT"
+                        | "ASSISTED_BODYWEIGHT",
+                    );
+                  }
+                }}
               >
-                <SelectTrigger id="equipment" required>
+                <SelectTrigger id="equipment">
                   <SelectValue placeholder="Select equipment" />
                 </SelectTrigger>
                 <SelectContent>

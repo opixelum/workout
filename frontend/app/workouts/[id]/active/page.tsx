@@ -1,5 +1,5 @@
 "use client";
-import { Check, FileEdit, GripHorizontal, Trash2, X } from "lucide-react";
+import { Check, GripHorizontal, Trash2 } from "lucide-react";
 import { notFound, usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -20,11 +20,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   api,
   type DurationSet,
   type Exercise,
   type RepSet,
   type Workout,
+  type WorkoutExercise,
 } from "@/lib/api";
 
 interface SetCompletion {
@@ -97,6 +106,9 @@ export default function ActiveWorkoutPage({
 }) {
   const [workout, setWorkout] = useState<Workout | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>(
+    [],
+  );
   const [repSets, setRepSets] = useState<RepSet[]>([]);
   const [durationSets, setDurationSets] = useState<DurationSet[]>([]);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -124,14 +136,14 @@ export default function ActiveWorkoutPage({
   const [exerciseRestTimes, setExerciseRestTimes] = useState<
     Record<string, number>
   >({});
+  const [exerciseNotes, setExerciseNotes] = useState<Record<string, string>>(
+    {},
+  );
   const [draggedGroupId, setDraggedGroupId] = useState<string | null>(null);
   const [dropIndicator, setDropIndicator] = useState<{
     groupId: string;
     position: "before" | "after";
   } | null>(null);
-  const [visibleNoteFields, setVisibleNoteFields] = useState<Set<number>>(
-    new Set(),
-  );
   const timerStartedAtRef = useRef<number | null>(null);
   const timerWorkoutIdRef = useRef<number | null>(null);
   const initialRepSetIdsRef = useRef<Set<number>>(new Set());
@@ -141,7 +153,6 @@ export default function ActiveWorkoutPage({
   const pathname = usePathname();
   const isEditMode = pathname.endsWith("/edit");
   const isNewMode = pathname.endsWith("/workouts/new");
-  const isFormMode = isEditMode || isNewMode;
   const router = useRouter();
 
   useEffect(() => {
@@ -163,21 +174,26 @@ export default function ActiveWorkoutPage({
           setRepSets([]);
           setDurationSets([]);
           setExerciseGroups([]);
+          setExerciseNotes({});
+          setWorkoutExercises([]);
           return;
         }
         const idNum = Number.parseInt(id, 10);
 
-        const [workoutData, exercisesData, repSetData, durationSetData]: [
-          Workout,
-          Exercise[],
-          RepSet[],
-          DurationSet[],
-        ] = await Promise.all([
-          api.getWorkout(idNum),
-          api.getExercises(),
-          api.getRepSets(),
-          api.getDurationSets(),
-        ]);
+        const [
+          workoutData,
+          exercisesData,
+          workoutExercisesData,
+          repSetData,
+          durationSetData,
+        ]: [Workout, Exercise[], WorkoutExercise[], RepSet[], DurationSet[]] =
+          await Promise.all([
+            api.getWorkout(idNum),
+            api.getExercises(),
+            api.getWorkoutExercises(idNum),
+            api.getRepSets(),
+            api.getDurationSets(),
+          ]);
 
         const nextRepSets = repSetData.filter(
           (set: RepSet) => set.workout_id === idNum,
@@ -188,8 +204,16 @@ export default function ActiveWorkoutPage({
 
         setWorkout(workoutData);
         setExercises(exercisesData);
+        setWorkoutExercises(workoutExercisesData);
         setRepSets(nextRepSets);
         setDurationSets(nextDurationSets);
+
+        // Initialize exercise notes from workout exercises
+        const initialNotes: Record<string, string> = {};
+        workoutExercisesData.forEach((we) => {
+          initialNotes[we.exercise_id.toString()] = we.note || "";
+        });
+        setExerciseNotes(initialNotes);
         initialRepSetIdsRef.current = new Set(nextRepSets.map((set) => set.id));
         initialDurationSetIdsRef.current = new Set(
           nextDurationSets.map((set) => set.id),
@@ -201,38 +225,25 @@ export default function ActiveWorkoutPage({
           nextDurationSets.map((set) => [set.id, set]),
         );
 
-        // Initialize inputs with saved values when in edit mode
-        if (isEditMode) {
-          const initialInputs: Record<string, string> = {};
-          nextRepSets.forEach((set) => {
-            if (set.weight !== null)
-              initialInputs[`${set.id}-weight`] = String(set.weight);
-            if (set.reps !== null)
-              initialInputs[`${set.id}-reps`] = String(set.reps);
-            if (set.rpe !== null)
-              initialInputs[`${set.id}-rpe`] = String(set.rpe);
-            if (set.note) initialInputs[`${set.id}-note`] = set.note;
-            initialInputs[`${set.id}-tempo-eccentric`] = String(
-              set.tempo_excentric,
-            );
-            initialInputs[`${set.id}-tempo-isometric`] = String(
-              set.tempo_isometric,
-            );
-            initialInputs[`${set.id}-tempo-concentric`] = String(
-              set.tempo_concentric,
-            );
-          });
-          nextDurationSets.forEach((set) => {
-            if (set.weight !== null)
-              initialInputs[`${set.id}-weight`] = String(set.weight);
-            if (set.duration !== null)
-              initialInputs[`${set.id}-duration`] = String(set.duration);
-            if (set.rpe !== null)
-              initialInputs[`${set.id}-rpe`] = String(set.rpe);
-            if (set.note) initialInputs[`${set.id}-note`] = set.note;
-          });
-          setInputs(initialInputs);
-        }
+        // Initialize inputs with saved values
+        const initialInputs: Record<string, string> = {};
+        nextRepSets.forEach((set) => {
+          if (set.weight !== null)
+            initialInputs[`${set.id}-weight`] = String(set.weight);
+          if (set.reps !== null)
+            initialInputs[`${set.id}-reps`] = String(set.reps);
+          if (set.rpe !== null)
+            initialInputs[`${set.id}-rpe`] = String(set.rpe);
+        });
+        nextDurationSets.forEach((set) => {
+          if (set.weight !== null)
+            initialInputs[`${set.id}-weight`] = String(set.weight);
+          if (set.duration !== null)
+            initialInputs[`${set.id}-duration`] = String(set.duration);
+          if (set.rpe !== null)
+            initialInputs[`${set.id}-rpe`] = String(set.rpe);
+        });
+        setInputs(initialInputs);
 
         setExerciseGroups(() => {
           const groups: ExerciseGroup[] = [];
@@ -267,10 +278,10 @@ export default function ActiveWorkoutPage({
     }
 
     loadData();
-  }, [params, isEditMode]);
+  }, [params]);
 
   useEffect(() => {
-    if (isEditMode || isNewMode || loading || !workout) {
+    if (loading || !workout || isEditMode || isNewMode) {
       return;
     }
 
@@ -288,7 +299,7 @@ export default function ActiveWorkoutPage({
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [isEditMode, isNewMode, loading, workout]);
+  }, [loading, workout, isEditMode, isNewMode]);
 
   useEffect(() => {
     if (!activeRestTime || activeRestTime.remaining <= 0) {
@@ -325,14 +336,10 @@ export default function ActiveWorkoutPage({
     exercise_id: exerciseId,
     position: 0,
     type_: "WORKSET",
-    note: null,
     weight: null,
     rpe: null,
     rest: 0,
     reps: 0,
-    tempo_excentric: 0,
-    tempo_isometric: 0,
-    tempo_concentric: 0,
   });
 
   const createDurationSetTemplate = (
@@ -344,7 +351,6 @@ export default function ActiveWorkoutPage({
     exercise_id: exerciseId,
     position: 0,
     type_: "WORKSET",
-    note: null,
     weight: null,
     rpe: null,
     rest: 0,
@@ -373,6 +379,10 @@ export default function ActiveWorkoutPage({
     } else {
       setDurationSets((prev) => [...prev, newSet as DurationSet]);
     }
+    setExerciseNotes((prev) => ({
+      ...prev,
+      [exercise.id.toString()]: "",
+    }));
     setExerciseDialogOpen(false);
     setSelectedExerciseId(null);
   };
@@ -393,23 +403,6 @@ export default function ActiveWorkoutPage({
       next.delete(setId);
       return next;
     });
-    setVisibleNoteFields((prev) => {
-      const next = new Set(prev);
-      next.delete(setId);
-      return next;
-    });
-  };
-
-  const toggleNoteField = (setId: number) => {
-    setVisibleNoteFields((prev) => {
-      const next = new Set(prev);
-      if (next.has(setId)) {
-        next.delete(setId);
-      } else {
-        next.add(setId);
-      }
-      return next;
-    });
   };
 
   const handleDeleteExercise = (groupId: string) => {
@@ -420,6 +413,11 @@ export default function ActiveWorkoutPage({
     setRepSets((prev) => prev.filter((set) => !groupSetIds.has(set.id)));
     setDurationSets((prev) => prev.filter((set) => !groupSetIds.has(set.id)));
     setExerciseGroups((prev) => prev.filter((item) => item.id !== groupId));
+    setExerciseNotes((prev) => {
+      const next = { ...prev };
+      delete next[group.exerciseId.toString()];
+      return next;
+    });
   };
 
   const handleDragOverExercise = (
@@ -565,30 +563,11 @@ export default function ActiveWorkoutPage({
         exercise_id: set.exercise_id,
         position: positions.get(set.id) ?? 0,
         type_,
-        note: inputs[`${set.id}-note`] ?? set.note,
         weight: toNumberOrNull(inputs[`${set.id}-weight`], set.weight),
         rpe: toNumberOrNull(inputs[`${set.id}-rpe`], set.rpe),
         rest: set.rest,
         reps: Math.round(
           toNumberOrNull(inputs[`${set.id}-reps`], set.reps) ?? 0,
-        ),
-        tempo_excentric: Math.round(
-          toNumberOrNull(
-            inputs[`${set.id}-tempo-eccentric`],
-            set.tempo_excentric,
-          ) ?? 0,
-        ),
-        tempo_isometric: Math.round(
-          toNumberOrNull(
-            inputs[`${set.id}-tempo-isometric`],
-            set.tempo_isometric,
-          ) ?? 0,
-        ),
-        tempo_concentric: Math.round(
-          toNumberOrNull(
-            inputs[`${set.id}-tempo-concentric`],
-            set.tempo_concentric,
-          ) ?? 0,
         ),
       };
 
@@ -600,15 +579,11 @@ export default function ActiveWorkoutPage({
       if (
         originalSet &&
         payload.type_ === originalSet.type_ &&
-        payload.note === originalSet.note &&
         payload.weight === originalSet.weight &&
         payload.rpe === originalSet.rpe &&
         payload.rest === originalSet.rest &&
         payload.reps === originalSet.reps &&
-        payload.position === originalSet.position &&
-        payload.tempo_excentric === originalSet.tempo_excentric &&
-        payload.tempo_isometric === originalSet.tempo_isometric &&
-        payload.tempo_concentric === originalSet.tempo_concentric
+        payload.position === originalSet.position
       ) {
         return Promise.resolve();
       }
@@ -623,7 +598,6 @@ export default function ActiveWorkoutPage({
         exercise_id: set.exercise_id,
         position: positions.get(set.id) ?? 0,
         type_,
-        note: inputs[`${set.id}-note`] ?? set.note,
         weight: toNumberOrNull(inputs[`${set.id}-weight`], set.weight),
         rpe: toNumberOrNull(inputs[`${set.id}-rpe`], set.rpe),
         rest: set.rest,
@@ -640,7 +614,6 @@ export default function ActiveWorkoutPage({
       if (
         originalSet &&
         payload.type_ === originalSet.type_ &&
-        payload.note === originalSet.note &&
         payload.weight === originalSet.weight &&
         payload.rpe === originalSet.rpe &&
         payload.rest === originalSet.rest &&
@@ -657,6 +630,53 @@ export default function ActiveWorkoutPage({
       ...currentRepSets.map(saveRepSet),
       ...currentDurationSets.map(saveDurationSet),
     ]);
+
+    // Save workout metadata (name and description)
+    if (!createOnly) {
+      await api.updateWorkout(targetWorkoutId, {
+        name: workout.name,
+        planned: workout.planned,
+        description: workout.description,
+        mesocycle_id: workout.mesocycle_id,
+      });
+    }
+
+    // Save workout exercises (create/update/delete based on exercise groups)
+    if (!createOnly) {
+      // Delete workout exercises that are no longer in the exercise groups
+      const currentExerciseIds = new Set(
+        exerciseGroups.map((group) => group.exerciseId),
+      );
+      await Promise.all(
+        workoutExercises
+          .filter((we) => !currentExerciseIds.has(we.exercise_id))
+          .map((we) => api.deleteWorkoutExercise(we.id)),
+      );
+    }
+
+    // Create or update workout exercises for each exercise group
+    for (const [index, group] of exerciseGroups.entries()) {
+      const existingWorkoutExercise = workoutExercises.find(
+        (we) => we.exercise_id === group.exerciseId,
+      );
+      const note = exerciseNotes[group.exerciseId.toString()] || null;
+
+      if (existingWorkoutExercise) {
+        // Update existing workout exercise
+        await api.updateWorkoutExercise(existingWorkoutExercise.id, {
+          position: index,
+          note,
+        });
+      } else {
+        // Create new workout exercise
+        await api.createWorkoutExercise({
+          workout_id: targetWorkoutId,
+          exercise_id: group.exerciseId,
+          position: index,
+          note,
+        });
+      }
+    }
   };
 
   const handleSetComplete = (setId: number, restTime: number) => {
@@ -688,11 +708,9 @@ export default function ActiveWorkoutPage({
       set.weight?.toString() || "0",
     );
     const rawRpeValue = getValueOrPlaceholder("rpe", set.rpe?.toString() || "");
-    const noteValue = getValueOrPlaceholder("note", set.note || "");
 
     if (weightValue) actualValues.weight = weightValue;
     if (rawRpeValue && rawRpeValue !== "0") actualValues.rpe = rawRpeValue;
-    if (noteValue) actualValues.note = noteValue;
 
     if ("reps" in set) {
       const repsValue = getValueOrPlaceholder(
@@ -700,26 +718,6 @@ export default function ActiveWorkoutPage({
         set.reps?.toString() || "0",
       );
       if (repsValue) actualValues.reps = repsValue;
-
-      const tempoEccentricValue = getValueOrPlaceholder(
-        "tempo-eccentric",
-        set.tempo_excentric?.toString() || "0",
-      );
-      const tempoIsometricValue = getValueOrPlaceholder(
-        "tempo-isometric",
-        set.tempo_isometric?.toString() || "0",
-      );
-      const tempoConcentricValue = getValueOrPlaceholder(
-        "tempo-concentric",
-        set.tempo_concentric?.toString() || "0",
-      );
-
-      if (tempoEccentricValue)
-        actualValues.tempoEccentric = tempoEccentricValue;
-      if (tempoIsometricValue)
-        actualValues.tempoIsometric = tempoIsometricValue;
-      if (tempoConcentricValue)
-        actualValues.tempoConcentric = tempoConcentricValue;
     }
 
     if ("duration" in set) {
@@ -743,15 +741,7 @@ export default function ActiveWorkoutPage({
     setInputs((prev) => {
       const next = { ...prev };
       for (const [key, value] of Object.entries(actualValues)) {
-        const normalizedKey =
-          key === "tempoEccentric"
-            ? "tempo-eccentric"
-            : key === "tempoIsometric"
-              ? "tempo-isometric"
-              : key === "tempoConcentric"
-                ? "tempo-concentric"
-                : key;
-        next[`${setId}-${normalizedKey}`] = String(value);
+        next[`${setId}-${key}`] = String(value);
       }
       return next;
     });
@@ -804,11 +794,11 @@ export default function ActiveWorkoutPage({
       <div className="mt-4">
         <div>
           <div className="flex flex-col items-end">
-            {isFormMode ? (
-              <div className="w-full space-y-3">
+            <div className="w-full">
+              <div className="flex justify-between">
                 <Input
                   aria-label="Workout name"
-                  className="font-bold"
+                  className="font-bold text-2xl mr-2"
                   placeholder="Workout name"
                   value={workout.name}
                   onChange={(event) =>
@@ -819,42 +809,30 @@ export default function ActiveWorkoutPage({
                     )
                   }
                 />
-                <Input
-                  aria-label="Workout description"
-                  placeholder="Description (optional)"
-                  value={workout.description ?? ""}
-                  onChange={(event) =>
-                    setWorkout((current) =>
-                      current
-                        ? {
-                            ...current,
-                            description: event.target.value || null,
-                          }
-                        : current,
-                    )
-                  }
-                />
-              </div>
-            ) : (
-              <div className="w-full">
-                <div className="flex justify-between">
-                  <h1 className="text-2xl font-bold">{workout.name}</h1>
-                  {!isFormMode && (
-                    <div className="text-2xl font-mono">
-                      {formatTime(elapsedTime)}
-                    </div>
-                  )}
+                <div className="text-2xl font-mono">
+                  {formatTime(elapsedTime)}
                 </div>
-                {workout.description && (
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {workout.description}
-                  </p>
-                )}
               </div>
-            )}
+              <Input
+                className="mt-2 mb-4"
+                aria-label="Workout description"
+                placeholder="Description (optional)"
+                value={workout.description ?? ""}
+                onChange={(event) =>
+                  setWorkout((current) =>
+                    current
+                      ? {
+                          ...current,
+                          description: event.target.value || null,
+                        }
+                      : current,
+                  )
+                }
+              />
+            </div>
           </div>
-          {!isFormMode && activeRestTime && (
-            <div className="flex justify-center gap-2 m-2">
+          {activeRestTime && !isEditMode && !isNewMode && (
+            <div className="flex justify-center items-center gap-2 mb-2">
               <div className="text-lg font-medium text-orange-600">
                 Rest: {activeRestTime.remaining}s
               </div>
@@ -969,11 +947,20 @@ export default function ActiveWorkoutPage({
                         </Button>
                       </div>
 
-                      {exercise.description && (
-                        <p className="text-sm text-muted-foreground mb-4">
-                          {exercise.description}
-                        </p>
-                      )}
+                      <div className="mb-2">
+                        <Input
+                          aria-label="Exercise note"
+                          className="text-sm"
+                          placeholder="Add a note"
+                          value={exerciseNotes[exerciseId] ?? ""}
+                          onChange={(event) =>
+                            setExerciseNotes((prev) => ({
+                              ...prev,
+                              [exerciseId]: event.target.value,
+                            }))
+                          }
+                        />
+                      </div>
 
                       <div className="flex items-center gap-2 mb-4 text-sm">
                         <label
@@ -986,7 +973,7 @@ export default function ActiveWorkoutPage({
                           id={`rest-${groupId}`}
                           type="number"
                           min="0"
-                          className="w-24"
+                          className="w-13"
                           value={
                             exerciseRestTimes[groupId] ?? sets[0]?.rest ?? 0
                           }
@@ -996,364 +983,243 @@ export default function ActiveWorkoutPage({
                         />
                       </div>
 
-                      <div className="flex flex-wrap justify-between items-center gap-2 mb-2 text-sm font-medium text-muted-foreground border-b pb-2">
-                        <span className="w-16">Type</span>
-                        <span className="w-20">{weightLabel}</span>
-                        {isRepExercise ? (
-                          <>
-                            <span className="w-16">reps</span>
-                            <span className="w-24">tempo</span>
-                          </>
-                        ) : (
-                          <span className="w-16">duration</span>
-                        )}
-                        <span className="w-16">RPE</span>
-                        {!isFormMode && <span className="w-8" />}
-                        <span className="w-10" />
-                      </div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="border-b">
+                            <TableHead className="p-2 text-center">
+                              Type
+                            </TableHead>
+                            <TableHead className="p-2 text-center">
+                              {weightLabel}
+                            </TableHead>
+                            {isRepExercise ? (
+                              <TableHead className="p-2 text-center">
+                                Reps
+                              </TableHead>
+                            ) : (
+                              <TableHead className="p-2 text-center">
+                                duration
+                              </TableHead>
+                            )}
+                            <TableHead className="p-2 text-center">
+                              RPE
+                            </TableHead>
+                            <TableHead className="p-2 w-8" />
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {sets.map((set) => {
+                            const completion = setCompletions.get(set.id);
+                            const isCompleted = completion?.completed;
+                            const actualValues = completion?.actualValues || {};
+                            const selectColor =
+                              SET_TYPE_COLORS[
+                                selectedSetTypes.get(set.id) || set.type_
+                              ] || "bg-background";
 
-                      <div className="space-y-3">
-                        {sets.map((set) => {
-                          const completion = setCompletions.get(set.id);
-                          const isCompleted = completion?.completed;
-                          const actualValues = completion?.actualValues || {};
-                          const selectColor =
-                            SET_TYPE_COLORS[
-                              selectedSetTypes.get(set.id) || set.type_
-                            ] || "bg-background";
-
-                          return (
-                            <div
-                              key={set.id}
-                              className={`flex flex-wrap justify-between items-center gap-2 p-3 rounded-lg border ${
-                                isCompleted
-                                  ? "bg-green-50 border-green-300 dark:bg-green-950/60 dark:border-green-600 dark:text-green-50 [&_input]:border-green-600 [&_input]:bg-green-900/50 [&_input]:text-green-50 [&_input]:placeholder:text-green-200"
-                                  : "bg-background"
-                              }`}
-                            >
-                              <Select
-                                value={
-                                  selectedSetTypes.get(set.id) || set.type_
+                            return (
+                              <TableRow
+                                key={set.id}
+                                className={
+                                  isCompleted
+                                    ? "bg-green-50 dark:bg-green-950/50 dark:text-green-50"
+                                    : ""
                                 }
-                                onValueChange={(selectedType) => {
-                                  if (!selectedType) return;
-                                  setSelectedSetTypes((prev) => {
-                                    const next = new Map(prev);
-                                    next.set(set.id, selectedType);
-                                    return next;
-                                  });
-                                  if (selectedType === "FAILURE") {
-                                    setInputs((prev) => ({
-                                      ...prev,
-                                      [`${set.id}-rpe`]: "10",
-                                    }));
-                                  }
-                                }}
                               >
-                                <SelectTrigger
-                                  className={`w-16 border px-2 py-1 text-sm ${
-                                    isCompleted &&
-                                    (selectedSetTypes.get(set.id) ||
-                                      set.type_) === "WORKSET"
-                                      ? "bg-green-50 dark:bg-green-900/50 dark:text-green-50"
-                                      : selectColor
-                                  }`}
-                                >
-                                  <SelectValue>
-                                    {getSetTypeDisplay(
-                                      set,
-                                      sets,
-                                      selectedSetTypes,
-                                    )}
-                                  </SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {SET_TYPES.map((type) => (
-                                    <SelectItem key={type} value={type}>
-                                      {SET_TYPE_LABELS[type] || type}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                                <TableCell className="p-2 text-center">
+                                  <Select
+                                    value={
+                                      selectedSetTypes.get(set.id) || set.type_
+                                    }
+                                    onValueChange={(selectedType) => {
+                                      if (!selectedType) return;
+                                      setSelectedSetTypes((prev) => {
+                                        const next = new Map(prev);
+                                        next.set(set.id, selectedType);
+                                        return next;
+                                      });
+                                      if (selectedType === "FAILURE") {
+                                        setInputs((prev) => ({
+                                          ...prev,
+                                          [`${set.id}-rpe`]: "10",
+                                        }));
+                                      }
+                                    }}
+                                  >
+                                    <SelectTrigger
+                                      showIcon={false}
+                                      className={`justify-center px-2 text-center font-medium min-w-8 ${
+                                        isCompleted
+                                          ? "bg-green-50 dark:bg-green-900/50 dark:text-green-50"
+                                          : selectColor
+                                      }`}
+                                    >
+                                      <SelectValue className="justify-center text-center">
+                                        {getSetTypeDisplay(
+                                          set,
+                                          sets,
+                                          selectedSetTypes,
+                                        )}
+                                      </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {SET_TYPES.map((type) => (
+                                        <SelectItem key={type} value={type}>
+                                          {SET_TYPE_LABELS[type] || type}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </TableCell>
 
-                              <Input
-                                type="number"
-                                placeholder={
-                                  set.weight !== null
-                                    ? set.weight.toString()
-                                    : actualValues.weight || "0"
-                                }
-                                value={
-                                  inputs[`${set.id}-weight`] ??
-                                  (isCompleted && actualValues.weight
-                                    ? String(actualValues.weight)
-                                    : isFormMode && set.weight !== null
-                                      ? String(set.weight)
-                                      : "")
-                                }
-                                className="w-20"
-                                onChange={(e) =>
-                                  setInputs((prev) => ({
-                                    ...prev,
-                                    [`${set.id}-weight`]: e.target.value,
-                                  }))
-                                }
-                              />
-
-                              {isRepExercise ? (
-                                <>
+                                <TableCell className="p-2 text-center">
                                   <Input
                                     type="number"
                                     placeholder={
-                                      "reps" in set && set.reps !== null
-                                        ? set.reps.toString()
-                                        : actualValues.reps || "0"
+                                      set.weight !== null
+                                        ? set.weight.toString()
+                                        : actualValues.weight || "0"
                                     }
                                     value={
-                                      inputs[`${set.id}-reps`] ??
-                                      (isCompleted && actualValues.reps
-                                        ? String(actualValues.reps)
-                                        : isFormMode &&
-                                            "reps" in set &&
-                                            set.reps !== null
-                                          ? String(set.reps)
+                                      inputs[`${set.id}-weight`] ??
+                                      (isCompleted && actualValues.weight
+                                        ? String(actualValues.weight)
+                                        : set.weight !== null
+                                          ? String(set.weight)
                                           : "")
                                     }
-                                    min="0"
-                                    className="w-16"
+                                    className="text-center"
                                     onChange={(e) =>
                                       setInputs((prev) => ({
                                         ...prev,
-                                        [`${set.id}-reps`]: e.target.value,
+                                        [`${set.id}-weight`]: e.target.value,
                                       }))
                                     }
                                   />
+                                </TableCell>
 
-                                  <div className="flex gap-1">
+                                <TableCell className="text-center">
+                                  {isRepExercise ? (
                                     <Input
                                       type="number"
                                       placeholder={
-                                        "tempo_excentric" in set &&
-                                        set.tempo_excentric !== null
-                                          ? set.tempo_excentric.toString()
-                                          : actualValues.tempoEccentric || "0"
+                                        "reps" in set && set.reps !== null
+                                          ? set.reps.toString()
+                                          : actualValues.reps || "0"
                                       }
                                       value={
-                                        inputs[`${set.id}-tempo-eccentric`] ??
-                                        (isCompleted &&
-                                        actualValues.tempoEccentric
-                                          ? String(actualValues.tempoEccentric)
-                                          : isFormMode &&
-                                              "tempo_excentric" in set &&
-                                              set.tempo_excentric !== null
-                                            ? String(set.tempo_excentric)
+                                        inputs[`${set.id}-reps`] ??
+                                        (isCompleted && actualValues.reps
+                                          ? String(actualValues.reps)
+                                          : "reps" in set && set.reps !== null
+                                            ? String(set.reps)
                                             : "")
                                       }
                                       min="0"
-                                      className="w-14 text-center"
+                                      className="text-center"
                                       onChange={(e) =>
                                         setInputs((prev) => ({
                                           ...prev,
-                                          [`${set.id}-tempo-eccentric`]:
+                                          [`${set.id}-reps`]: e.target.value,
+                                        }))
+                                      }
+                                    />
+                                  ) : (
+                                    <Input
+                                      type="number"
+                                      placeholder={
+                                        "duration" in set &&
+                                        set.duration !== null
+                                          ? set.duration.toString()
+                                          : actualValues.duration || "0"
+                                      }
+                                      value={
+                                        inputs[`${set.id}-duration`] ??
+                                        (isCompleted && actualValues.duration
+                                          ? String(actualValues.duration)
+                                          : "duration" in set &&
+                                              set.duration !== null
+                                            ? String(set.duration)
+                                            : "")
+                                      }
+                                      min="0"
+                                      className="text-center"
+                                      onChange={(e) =>
+                                        setInputs((prev) => ({
+                                          ...prev,
+                                          [`${set.id}-duration`]:
                                             e.target.value,
                                         }))
                                       }
                                     />
-                                    <Input
-                                      type="number"
-                                      placeholder={
-                                        "tempo_isometric" in set &&
-                                        set.tempo_isometric !== null
-                                          ? set.tempo_isometric.toString()
-                                          : actualValues.tempoIsometric || "0"
-                                      }
-                                      value={
-                                        inputs[`${set.id}-tempo-isometric`] ??
-                                        (isCompleted &&
-                                        actualValues.tempoIsometric
-                                          ? String(actualValues.tempoIsometric)
-                                          : isFormMode &&
-                                              "tempo_isometric" in set &&
-                                              set.tempo_isometric !== null
-                                            ? String(set.tempo_isometric)
-                                            : "")
-                                      }
-                                      min="0"
-                                      className="w-14 text-center"
-                                      onChange={(e) =>
-                                        setInputs((prev) => ({
-                                          ...prev,
-                                          [`${set.id}-tempo-isometric`]:
-                                            e.target.value,
-                                        }))
-                                      }
-                                    />
-                                    <Input
-                                      type="number"
-                                      placeholder={
-                                        "tempo_concentric" in set &&
-                                        set.tempo_concentric !== null
-                                          ? set.tempo_concentric.toString()
-                                          : actualValues.tempoConcentric || "0"
-                                      }
-                                      value={
-                                        inputs[`${set.id}-tempo-concentric`] ??
-                                        (isCompleted &&
-                                        actualValues.tempoConcentric
-                                          ? String(actualValues.tempoConcentric)
-                                          : isFormMode &&
-                                              "tempo_concentric" in set &&
-                                              set.tempo_concentric !== null
-                                            ? String(set.tempo_concentric)
-                                            : "")
-                                      }
-                                      min="0"
-                                      className="w-14 text-center"
-                                      onChange={(e) =>
-                                        setInputs((prev) => ({
-                                          ...prev,
-                                          [`${set.id}-tempo-concentric`]:
-                                            e.target.value,
-                                        }))
-                                      }
-                                    />
-                                  </div>
-                                </>
-                              ) : (
-                                <Input
-                                  type="number"
-                                  placeholder={
-                                    "duration" in set && set.duration !== null
-                                      ? set.duration.toString()
-                                      : actualValues.duration || "0"
-                                  }
-                                  value={
-                                    inputs[`${set.id}-duration`] ??
-                                    (isCompleted && actualValues.duration
-                                      ? String(actualValues.duration)
-                                      : isFormMode &&
-                                          "duration" in set &&
-                                          set.duration !== null
-                                        ? String(set.duration)
-                                        : "")
-                                  }
-                                  min="0"
-                                  className="w-16"
-                                  onChange={(e) =>
-                                    setInputs((prev) => ({
-                                      ...prev,
-                                      [`${set.id}-duration`]: e.target.value,
-                                    }))
-                                  }
-                                />
-                              )}
+                                  )}
+                                </TableCell>
 
-                              <Input
-                                type="number"
-                                placeholder={
-                                  set.rpe !== null
-                                    ? set.rpe.toString()
-                                    : actualValues.rpe || "0"
-                                }
-                                value={
-                                  inputs[`${set.id}-rpe`] ??
-                                  (isCompleted && actualValues.rpe
-                                    ? String(actualValues.rpe)
-                                    : isFormMode && set.rpe !== null
-                                      ? String(set.rpe)
-                                      : "")
-                                }
-                                className="w-16"
-                                min="1"
-                                max="10"
-                                step="0.5"
-                                onChange={(e) =>
-                                  setInputs((prev) => ({
-                                    ...prev,
-                                    [`${set.id}-rpe`]: e.target.value,
-                                  }))
-                                }
-                              />
+                                <TableCell className="p-2 text-center">
+                                  <Input
+                                    type="number"
+                                    placeholder={
+                                      set.rpe !== null
+                                        ? set.rpe.toString()
+                                        : actualValues.rpe || "0"
+                                    }
+                                    value={
+                                      inputs[`${set.id}-rpe`] ??
+                                      (isCompleted && actualValues.rpe
+                                        ? String(actualValues.rpe)
+                                        : set.rpe !== null
+                                          ? String(set.rpe)
+                                          : "")
+                                    }
+                                    className="text-center"
+                                    min="1"
+                                    max="10"
+                                    step="0.5"
+                                    onChange={(e) =>
+                                      setInputs((prev) => ({
+                                        ...prev,
+                                        [`${set.id}-rpe`]: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                </TableCell>
 
-                              <div className="flex gap-2 items-center">
-                                {!visibleNoteFields.has(set.id) &&
-                                  !set.note?.trim() &&
-                                  !actualValues.note?.trim() && (
+                                <TableCell className="p-2 flex gap-1 text-center">
+                                  {!isEditMode && !isNewMode && (
                                     <Button
-                                      size="icon-sm"
-                                      variant="outline"
-                                      onClick={() => toggleNoteField(set.id)}
-                                      title="Add note"
+                                      variant={
+                                        isCompleted ? "default" : "outline"
+                                      }
+                                      className={
+                                        isCompleted
+                                          ? "bg-green-600 text-white hover:bg-green-700"
+                                          : ""
+                                      }
+                                      onClick={() =>
+                                        handleSetComplete(
+                                          set.id,
+                                          exerciseRestTimes[groupId] ??
+                                            set.rest,
+                                        )
+                                      }
                                     >
-                                      <FileEdit className="size-4" />
+                                      <Check className="size-4" />
                                     </Button>
                                   )}
-                                {!isEditMode && !isNewMode && (
-                                  <Button
-                                    size="sm"
-                                    variant={
-                                      isCompleted ? "default" : "outline"
-                                    }
-                                    className={
-                                      isCompleted
-                                        ? "bg-green-600 text-white hover:bg-green-700"
-                                        : ""
-                                    }
-                                    onClick={() =>
-                                      handleSetComplete(
-                                        set.id,
-                                        exerciseRestTimes[groupId] ?? set.rest,
-                                      )
-                                    }
-                                  >
-                                    <Check className="size-4" />
-                                  </Button>
-                                )}
 
-                                <Button
-                                  size="icon-sm"
-                                  variant="destructive"
-                                  className="border-destructive/40"
-                                  onClick={() => handleDeleteSet(set.id)}
-                                >
-                                  <Trash2 className="size-4" />
-                                </Button>
-                              </div>
-                              {visibleNoteFields.has(set.id) ||
-                              set.note?.trim() ||
-                              actualValues.note?.trim() ? (
-                                <div className="w-full mt-2 flex gap-2">
-                                  <Input
-                                    type="text"
-                                    placeholder="Set note"
-                                    value={
-                                      inputs[`${set.id}-note`] ??
-                                      (isCompleted && actualValues.note
-                                        ? String(actualValues.note)
-                                        : set.note || "")
-                                    }
-                                    onChange={(e) =>
-                                      setInputs((prev) => ({
-                                        ...prev,
-                                        [`${set.id}-note`]: e.target.value,
-                                      }))
-                                    }
-                                    className="flex-1"
-                                  />
                                   <Button
-                                    size="icon-sm"
-                                    variant="outline"
-                                    onClick={() => toggleNoteField(set.id)}
-                                    title="Delete note"
+                                    variant="destructive"
+                                    className="border-destructive/40"
+                                    onClick={() => handleDeleteSet(set.id)}
                                   >
-                                    <X className="size-4" />
+                                    <Trash2 className="size-4" />
                                   </Button>
-                                </div>
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                      </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
                       <div className="mt-4 flex justify-center">
                         <Button
                           size="sm"
@@ -1434,7 +1300,10 @@ export default function ActiveWorkoutPage({
                     setSelectedExerciseId(value ? Number(value) : null)
                   }
                 >
-                  <SelectTrigger className="w-full border px-3 py-2">
+                  <SelectTrigger
+                    showIcon={false}
+                    className="w-full border px-3 py-2"
+                  >
                     <SelectValue>
                       {selectedExerciseId === null
                         ? "Select an exercise"
@@ -1533,12 +1402,6 @@ export default function ActiveWorkoutPage({
 
                       if (isEditMode) {
                         await saveEditedWorkout();
-                        await api.updateWorkout(workout.id, {
-                          name: workout.name,
-                          planned: true,
-                          description: workout.description,
-                          mesocycle_id: workout.mesocycle_id,
-                        });
                         setDialogOpen(false);
                         router.push(`/workouts/${workout.id}`);
                         return;
@@ -1550,6 +1413,18 @@ export default function ActiveWorkoutPage({
                         description: workout?.description ?? null,
                         mesocycle_id: workout?.mesocycle_id ?? null,
                       });
+
+                      // Save workout exercises with notes
+                      for (const [index, group] of exerciseGroups.entries()) {
+                        const note =
+                          exerciseNotes[group.exerciseId.toString()] || null;
+                        await api.createWorkoutExercise({
+                          workout_id: newWorkout.id,
+                          exercise_id: group.exerciseId,
+                          position: index,
+                          note,
+                        });
+                      }
 
                       for (const [
                         setId,
@@ -1582,7 +1457,6 @@ export default function ActiveWorkoutPage({
                           exercise_id: setObj.exercise_id,
                           position: setObj.position,
                           type_: selectedType,
-                          note: completion.actualValues.note || null,
                           weight: Number.isFinite(numericWeight)
                             ? numericWeight
                             : null,
@@ -1599,46 +1473,10 @@ export default function ActiveWorkoutPage({
                           const repsValue = completion.actualValues.reps
                             ? Number.parseInt(completion.actualValues.reps, 10)
                             : (setObj.reps ?? 0);
-                          const tempoExcentricValue = completion.actualValues
-                            .tempoEccentric
-                            ? Number.parseInt(
-                                completion.actualValues.tempoEccentric,
-                                10,
-                              )
-                            : (setObj.tempo_excentric ?? 0);
-                          const tempoIsometricValue = completion.actualValues
-                            .tempoIsometric
-                            ? Number.parseInt(
-                                completion.actualValues.tempoIsometric,
-                                10,
-                              )
-                            : (setObj.tempo_isometric ?? 0);
-                          const tempoConcentricValue = completion.actualValues
-                            .tempoConcentric
-                            ? Number.parseInt(
-                                completion.actualValues.tempoConcentric,
-                                10,
-                              )
-                            : (setObj.tempo_concentric ?? 0);
 
                           await api.createRepSet({
                             ...base,
                             reps: Number.isFinite(repsValue) ? repsValue : 0,
-                            tempo_excentric: Number.isFinite(
-                              tempoExcentricValue,
-                            )
-                              ? tempoExcentricValue
-                              : 0,
-                            tempo_isometric: Number.isFinite(
-                              tempoIsometricValue,
-                            )
-                              ? tempoIsometricValue
-                              : 0,
-                            tempo_concentric: Number.isFinite(
-                              tempoConcentricValue,
-                            )
-                              ? tempoConcentricValue
-                              : 0,
                           });
                         } else {
                           const durationValue = completion.actualValues.duration

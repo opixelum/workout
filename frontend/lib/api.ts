@@ -32,13 +32,20 @@ export interface Exercise {
     | "ASSISTED_BODYWEIGHT";
 }
 
+export interface WorkoutExercise {
+  id: number;
+  workout_id: number;
+  exercise_id: number;
+  position: number;
+  note: string | null;
+}
+
 export interface Set {
   id: number;
   workout_id: number;
   exercise_id: number;
   position: number;
   type_: string;
-  note: string | null;
   weight: number | null;
   rpe: number | null;
   rest: number;
@@ -46,9 +53,6 @@ export interface Set {
 
 export interface RepSet extends Set {
   reps: number | null;
-  tempo_excentric: number;
-  tempo_isometric: number;
-  tempo_concentric: number;
 }
 
 export interface DurationSet extends Set {
@@ -188,6 +192,27 @@ export const api = {
 
   deleteDurationSet: (setId: number) =>
     fetchAPI(`/duration_sets/${setId}`, {
+      method: "DELETE",
+    }),
+
+  // WorkoutExercises
+  getWorkoutExercises: (workoutId: number) =>
+    fetchAPI(`/workout_exercises?workout_id=${workoutId}`),
+
+  createWorkoutExercise: (data: Omit<WorkoutExercise, "id">) =>
+    fetchAPI("/workout_exercises", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateWorkoutExercise: (id: number, data: Partial<WorkoutExercise>) =>
+    fetchAPI(`/workout_exercises/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  deleteWorkoutExercise: (id: number) =>
+    fetchAPI(`/workout_exercises/${id}`, {
       method: "DELETE",
     }),
 };
