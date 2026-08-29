@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import { AuthGuard } from "@/components/auth-guard";
 import { Navigation } from "@/components/navigation";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -51,7 +52,9 @@ export default function RootLayout({
         </Script>
         <AuthProvider>
           <Navigation />
-          <main className="flex-1">{children}</main>
+          <AuthGuard>
+            <main className="flex-1">{children}</main>
+          </AuthGuard>
         </AuthProvider>
       </body>
     </html>

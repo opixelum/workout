@@ -1,10 +1,25 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function Navigation() {
+  const pathname = usePathname();
   const { user, logout, isLoading } = useAuth();
+
+  const normalizedPath =
+    pathname.endsWith("/") && pathname !== "/"
+      ? pathname.slice(0, -1)
+      : pathname;
+
+  if (
+    normalizedPath === "/login" ||
+    normalizedPath === "/signup" ||
+    normalizedPath === "/"
+  ) {
+    return null;
+  }
 
   if (isLoading) {
     return (
@@ -27,7 +42,7 @@ export function Navigation() {
     <nav className="border-b">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <Link href="/" className="text-xl font-bold">
+          <Link href={user ? "/workouts" : "/"} className="text-xl font-bold">
             Workout Tracker
           </Link>
           <div className="flex gap-4 items-center">

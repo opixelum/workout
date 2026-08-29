@@ -1244,48 +1244,50 @@ export default function ActiveWorkoutPage({
                                   }))
                                 }
                               />
-							  
+
                               <div className="flex gap-2 items-center">
-                              {!visibleNoteFields.has(set.id) &&
-                                !set.note?.trim() &&
-                                !actualValues.note?.trim() && (
+                                {!visibleNoteFields.has(set.id) &&
+                                  !set.note?.trim() &&
+                                  !actualValues.note?.trim() && (
+                                    <Button
+                                      size="icon-sm"
+                                      variant="outline"
+                                      onClick={() => toggleNoteField(set.id)}
+                                      title="Add note"
+                                    >
+                                      <FileEdit className="size-4" />
+                                    </Button>
+                                  )}
+                                {!isEditMode && !isNewMode && (
+                                  <Button
+                                    size="sm"
+                                    variant={
+                                      isCompleted ? "default" : "outline"
+                                    }
+                                    className={
+                                      isCompleted
+                                        ? "bg-green-600 text-white hover:bg-green-700"
+                                        : ""
+                                    }
+                                    onClick={() =>
+                                      handleSetComplete(
+                                        set.id,
+                                        exerciseRestTimes[groupId] ?? set.rest,
+                                      )
+                                    }
+                                  >
+                                    <Check className="size-4" />
+                                  </Button>
+                                )}
+
                                 <Button
                                   size="icon-sm"
-                                  variant="outline"
-                                  onClick={() => toggleNoteField(set.id)}
-                                  title="Add note"
+                                  variant="destructive"
+                                  className="border-destructive/40"
+                                  onClick={() => handleDeleteSet(set.id)}
                                 >
-                                  <FileEdit className="size-4" />
+                                  <Trash2 className="size-4" />
                                 </Button>
-                              )}
-                              {!isEditMode && !isNewMode && (
-                                <Button
-                                  size="sm"
-                                  variant={isCompleted ? "default" : "outline"}
-                                  className={
-                                    isCompleted
-                                      ? "bg-green-600 text-white hover:bg-green-700"
-                                      : ""
-                                  }
-                                  onClick={() =>
-                                    handleSetComplete(
-                                      set.id,
-                                      exerciseRestTimes[groupId] ?? set.rest,
-                                    )
-                                  }
-                                >
-                                  <Check className="size-4" />
-                                </Button>
-                              )}
-
-                              <Button
-                                size="icon-sm"
-                                variant="destructive"
-                                className="border-destructive/40"
-                                onClick={() => handleDeleteSet(set.id)}
-                              >
-                                <Trash2 className="size-4" />
-                              </Button>
                               </div>
                               {visibleNoteFields.has(set.id) ||
                               set.note?.trim() ||

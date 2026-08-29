@@ -169,24 +169,9 @@ export default async function WorkoutsPage() {
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer mb-4">
                     <CardContent>
                       <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold mb-2">
-                            {workout.name}
-                          </h3>
-                          {exerciseData.length > 0 ? (
-                            <ul className="space-y-1 text-sm text-muted-foreground">
-                              {exerciseData.map(({ exercise, setCount }) => (
-                                <li key={`${workout.id}-${exercise.id}`}>
-                                  {setCount} x {exercise.name}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-sm text-muted-foreground">
-                              No exercises added yet.
-                            </p>
-                          )}
-                        </div>
+                        <h3 className="text-lg font-semibold mb-2">
+                          {workout.name}
+                        </h3>
                         <div className="text-sm text-muted-foreground ml-4">
                           {new Intl.DateTimeFormat(undefined, {
                             dateStyle: "medium",
@@ -194,6 +179,19 @@ export default async function WorkoutsPage() {
                           }).format(new Date(workout.creation_date))}
                         </div>
                       </div>
+                      {exerciseData.length > 0 ? (
+                        <ul className="space-y-1 text-sm text-muted-foreground">
+                          {exerciseData.map(({ exercise, setCount }) => (
+                            <li key={`${workout.id}-${exercise.id}`}>
+                              {setCount} x {exercise.name}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          No exercises added yet.
+                        </p>
+                      )}
                     </CardContent>
                   </Card>
                 </Link>
